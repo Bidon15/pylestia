@@ -74,3 +74,4 @@ target/
 
 
 __version__.py
+celestia/__init__.py

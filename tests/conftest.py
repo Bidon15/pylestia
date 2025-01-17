@@ -1,5 +1,9 @@
-import pytest
+import asyncio
 
+import pytest
+import pytest_asyncio
+
+from celestia.node_api import Client
 from .utils import start_testnet, stop_testnet, get_auth_token, get_container_id
 
 
@@ -15,11 +19,26 @@ def container_id():
         assert container_id, "Failed to start testnet"
 
 
-@pytest.fixture(scope='session')
-def auth_token(container_id):
+@pytest_asyncio.fixture(scope='session')
+async def auth_token(container_id):
     auth_token = get_auth_token(container_id)
     assert auth_token, "Failed to get auth token"
-    yield auth_token
+    cnt = 30
+    endpoint = 'localhost:26658'
+    host, port = endpoint.split(':')
+    client = Client(host, int(port))
+    while cnt:
+        try:
+            async with client.connect(auth_token) as api:
+                balance = await api.state.balance()
+                if balance.amount:
+                    break
+        except Exception:
+            pass
+        cnt -= 1
+        await asyncio.sleep(1)
+    assert cnt, """Cannot connect to testnet"""
+    return auth_token
 
 
 @pytest.fixture(scope='session')
