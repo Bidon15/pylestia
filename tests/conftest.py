@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from celestia.node_api import Client
-from .utils import start_testnet, stop_testnet, get_auth_token, get_container_id
+from tests.utils import start_testnet, stop_testnet, get_auth_token, get_container_id
 
 
 @pytest.fixture(scope='session')

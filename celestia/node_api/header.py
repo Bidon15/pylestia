@@ -1,4 +1,4 @@
-from typing_extensions import AsyncIterator
+from collections.abc import AsyncIterator
 
 from ._RPC import Wrapper
 

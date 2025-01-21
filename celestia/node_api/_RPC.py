@@ -10,10 +10,11 @@ from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from dataclasses import is_dataclass, asdict
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
+from celestia._celestia import types  # noqa
 
 
 class Base64(bytes):
-    """ Celestia namespace. """
+    """ Byte string. """
 
     def __new__(cls, value: str | bytes):
         if isinstance(value, str):
@@ -22,6 +23,19 @@ class Base64(bytes):
 
     def __str__(self) -> str:
         return b64encode(self).decode('ascii')
+
+
+class Namespace(Base64):
+    """ Celestia namespace. """
+
+    def __new__(cls, value: str | bytes):
+        value = super().__new__(cls, value)
+        value = types.normalize_namespace(value)
+        return super().__new__(cls, value)
+
+
+class Commitment(Base64):
+    """Celestia commitment"""
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -93,7 +107,7 @@ class RPC:
 
         return connect_context()
 
-    async def call(self, method: str, params: tuple[t.Any] = None,
+    async def call(self, method: str, params: tuple[t.Any, ...] = None,
                    deserializer: t.Callable[[t.Any], t.Any] = None) -> t.Any | None:
         params = params or ()
         deserializer = deserializer or (lambda a: a)
@@ -105,7 +119,7 @@ class RPC:
         result = await future
         return deserializer(result)
 
-    async def iter(self, method: str, params: tuple[t.Any] = None,
+    async def iter(self, method: str, params: tuple[t.Any, ...] = None,
                    deserializer: t.Callable[[t.Any], t.Any] = None
                    ) -> AsyncGenerator[t.Any]:
         deserializer = deserializer or (lambda a: a)
