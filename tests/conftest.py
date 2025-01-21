@@ -24,9 +24,7 @@ async def auth_token(container_id):
     auth_token = get_auth_token(container_id)
     assert auth_token, "Failed to get auth token"
     cnt = 30
-    endpoint = 'localhost:26658'
-    host, port = endpoint.split(':')
-    client = Client(host, int(port))
+    client = Client('localhost', 26658)
     while cnt:
         try:
             async with client.connect(auth_token) as api:

@@ -16,9 +16,9 @@ class Client:
 
     def __init__(self,
                  host: str = 'localhost', port: int = 26658,
-                 response_timeout: int = 180, **options: t.Any):
+                 auth_token: str = None, response_timeout: int = 180, **options: t.Any):
         self.__options = dict(options, url=f'ws://{host}:{port}',
-                              response_timeout=response_timeout)
+                              auth_token=auth_token, response_timeout=response_timeout)
 
     @property
     def options(self):
@@ -44,14 +44,15 @@ class Client:
         def header(self):
             return HeaderClient(self._rpc)
 
-    def connect(self, token: str = None, **options: t.Any) -> AbstractAsyncContextManager[NodeAPI]:
+    def connect(self, auth_token: str = None, **options: t.Any) -> AbstractAsyncContextManager[NodeAPI]:
         """ Creates and return connection context manager. """
         headers = []
         options = dict(self.options, **options)
         url = options['url']
         response_timeout = options['response_timeout']
-        if token:
-            headers.append(('Authorization', f'Bearer {token}'))
+        auth_token = auth_token or options['auth_token']
+        if auth_token is not None:
+            headers.append(('Authorization', f'Bearer {auth_token}'))
 
         async def listener(connection: ClientConnection, receiver: t.Callable[[str | bytes], None]):
             async for message in connection:
