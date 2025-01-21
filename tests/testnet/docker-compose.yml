@@ -4,7 +4,6 @@ services:
     image: validator
     platform: "linux/amd64"
     build:
-      context: ci
       dockerfile: Dockerfile.validator
     environment:
       # provide amount of bridge nodes to provision (default: 2)
@@ -19,7 +18,6 @@ services:
     image: bridge
     platform: "linux/amd64"
     build:
-      context: ci
       dockerfile: Dockerfile.bridge
     environment:
       # provide an id for the bridge node (default: 0)
