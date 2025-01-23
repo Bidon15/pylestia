@@ -34,6 +34,28 @@ async def test_header(auth_token):
         assert state1['height'] <= state2['height']
 
 
+@pytest.mark.asyncio
+async def test_header_exceptions(auth_token):
+    client = Client()
+    async with client.connect(auth_token) as api:
+        local_head = await api.header.local_head()
+        local_height = int(local_head['header']['height'])
+
+        with pytest.raises(ValueError):
+            await api.header.get_by_height(18446744073709551615)
+        with pytest.raises(ValueError):
+            await api.header.get_by_height(0)
+        with pytest.raises(ValueError):
+            await api.header.get_by_height(-1)
+
+        with pytest.raises(ValueError):
+            await api.header.get_range_by_height(await api.header.get_by_height(local_height), local_height - 5)
+
+        with pytest.raises(ValueError):
+            await api.header.wait_for_height(0)
+        with pytest.raises(ValueError):
+            await api.header.wait_for_height(-1)
+
 
 @pytest.mark.asyncio
 async def test_header_subscribe(auth_token):
