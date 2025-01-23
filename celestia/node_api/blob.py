@@ -1,4 +1,5 @@
 import typing as t
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 from celestia._celestia import types  # noqa
@@ -115,3 +116,8 @@ class BlobClient(Wrapper):
         is included at given height and under the namespace.
         """
         return await self._rpc.call("blob.Included", (height, Namespace(namespace), proof, Commitment(commitment)))
+
+    def subscribe(self, namespace: Namespace) -> AsyncIterator[Blob]:
+        """ The method subscribes to published blobs from the given namespace as they are included.
+        """
+        return self._rpc.iter("blob.Subscribe", (Namespace(namespace),))

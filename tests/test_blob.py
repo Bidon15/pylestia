@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from celestia.node_api import Client
@@ -54,3 +56,19 @@ async def test_send_blobs(auth_token):
         # com_proof = await api.blob.get_commitment_proof(result.height, b'abc', b'345')
         # assert com_proof is not None
         # ToDo: Figure out how to test the data type shareCommitment, blob.CommitmentProof
+
+
+@pytest.mark.asyncio
+async def test_blob_subscribe(auth_token):
+    result = []
+    client = Client()
+    async with client.connect(auth_token) as api:
+        async with asyncio.timeout(30):
+            i = 0
+            async for blob in api.blob.subscribe(b'qwe'):
+                result.append(blob)
+                assert len(result) == i + 1
+                await api.blob.submit(Blob(b'qwe', f'QWERTY{i}'.encode()))
+                i += 1
+                if len(result) == 4:
+                    break
