@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.validator
     environment:
       # provide amount of bridge nodes to provision (default: 2)
-      - BRIDGE_COUNT=1
+      - BRIDGE_COUNT=3
     ports:
       - 19090:9090
     volumes:
@@ -28,6 +28,40 @@ services:
       - CELESTIA_ENABLE_QUIC=1
     ports:
       - 26658:26658
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
+  bridge-1:
+    image: bridge
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    environment:
+      # provide an id for the bridge node (default: 0)
+      # each node should have a next natural number starting from 0
+      - NODE_ID=1
+      - CELESTIA_ENABLE_QUIC=1
+    ports:
+      - 36658:26658
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
+  bridge-2:
+    image: bridge
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    environment:
+      # provide an id for the bridge node (default: 0)
+      # each node should have a next natural number starting from 0
+      - NODE_ID=2
+      - CELESTIA_ENABLE_QUIC=1
+    ports:
+      - 46658:26658
     volumes:
       - credentials:/credentials
       - genesis:/genesis

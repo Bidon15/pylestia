@@ -29,6 +29,11 @@ class Blob:
             self.share_version = kwargs['share_version']
         self.index = index
 
+    @staticmethod
+    def deserializer(result):
+        if result is not None:
+            return Blob(**result)
+
 
 class TxConfig(t.TypedDict):
     signer_address: str | None
@@ -54,13 +59,9 @@ class BlobClient(Wrapper):
         """ Retrieves the blob by commitment under the given namespace and height.
         """
 
-        def deserializer(result):
-            if result is not None:
-                return Blob(**result)
-
         try:
             return await self._rpc.call("blob.Get", (height, Namespace(namespace), Commitment(commitment)),
-                                        deserializer)
+                                        Blob.deserializer)
         except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None

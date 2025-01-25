@@ -17,7 +17,9 @@ RPC_VALUE_ERRORS = [
     'equal to 0',
     'given height is from the future',
     'invalid range',
-    'height must be bigger than zero'
+    'height must be bigger than zero',
+    'dial to self attempted',
+    'gater disallows connection to peer'
 ]
 
 
