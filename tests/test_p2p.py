@@ -1,0 +1,110 @@
+import asyncio
+from dataclasses import asdict
+
+import pytest
+
+from celestia.node_api import Client
+from celestia.node_api.p2p import Connectedness, Reachability
+from tests.utils import get_auth_token, get_container_id, start_testnet, stop_testnet
+
+
+@pytest.fixture(scope='session')
+def container_ids():
+    if containers_id := get_container_id(return_all=True):
+        containers = []
+        for container_id in containers_id:
+            containers.append((get_auth_token(container_id[0]), container_id[1]))
+        yield containers
+    else:
+        start_testnet()
+        if containers_id := get_container_id(30, return_all=True):
+            containers = []
+            for container_id in containers_id:
+                containers.append((get_auth_token(container_id[0]), container_id[1]))
+            yield containers
+            stop_testnet()
+        assert containers_id, "Failed to start testnet"
+
+
+@pytest.mark.asyncio
+async def test_p2p(container_ids):
+    container1, container2, container3 = container_ids[:3]
+
+    client1 = Client(port=container1[1])
+    client2 = Client(port=container2[1])
+    client3 = Client(port=container3[1])
+
+    cnt = 30
+    while cnt:
+        try:
+            async with client1.connect(container1[0]) as api:
+                balance = await api.state.balance()
+                if balance.amount:
+                    break
+        except Exception:
+            pass
+        cnt -= 1
+        await asyncio.sleep(1)
+
+    async with client1.connect(container1[0]) as api:
+        info1 = await api.p2p.info()
+
+    async with client2.connect(container2[0]) as api:
+        info2 = await api.p2p.info()
+
+    async with client3.connect(container3[0]) as api:
+        info3 = await api.p2p.info()
+
+        assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info1.id)
+        assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info2.id)
+
+        await api.p2p.close_peer(info1.id)
+        assert Connectedness.NOT_CONNECTED.value == await api.p2p.connectedness(info1.id)
+        assert info1.id not in await api.p2p.peers()
+        await api.p2p.connect(info1)
+        assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info1.id)
+        assert info1.id in await api.p2p.peers()
+
+        await api.p2p.block_peer(info2.id)
+        assert Connectedness.NOT_CONNECTED.value == await api.p2p.connectedness(info2.id)
+        assert info2.id in await api.p2p.list_blocked_peers()
+        await api.p2p.unblock_peer(info2.id)
+        await api.p2p.connect(info2)
+        assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info2.id)
+        assert info2.id not in await api.p2p.list_blocked_peers()
+
+        one_peer_stats = await api.p2p.bandwidth_for_peer(info1.id)
+        assert not all(value == 0 for value in asdict(one_peer_stats).values())
+        bad_peer_stats = await api.p2p.bandwidth_for_peer('12D3KooWEhKP6kFF3Ptz14PeJkBXT4RNF8Dbc6LVa4gMbBVeajkQ')
+        assert all(value == 0 for value in asdict(bad_peer_stats).values())
+        all_peers_stats = await api.p2p.bandwidth_stats()
+        assert not all(value == 0 for value in asdict(all_peers_stats).values())
+
+        res_man_stat = await api.p2p.resource_state()
+
+        for keys in res_man_stat.protocols.keys():
+            protocol_stats = await api.p2p.bandwidth_for_protocol(keys)
+            assert not all(value == 0 for value in asdict(protocol_stats).values())
+
+        bad_protocol_stats = await api.p2p.bandwidth_for_protocol('/qwe/asd/zxc')
+        assert all(value == 0 for value in asdict(bad_protocol_stats).values())
+
+        assert not await api.p2p.is_protected(info1.id, 'Test tag')
+        await api.p2p.protect(info1.id, 'Test tag')
+        assert await api.p2p.is_protected(info1.id, 'Test tag')
+        assert not await api.p2p.is_protected(info1.id, 'Bad test tag')
+        await api.p2p.unprotect(info1.id, 'Test tag')
+        assert not await api.p2p.is_protected(info1.id, 'Test tag')
+
+        assert Reachability.Unknown.value == await api.p2p.nat_status()
+
+        topic = await api.p2p.pub_sub_topics()
+        assert len(await api.p2p.pub_sub_peers(topic[0])) == 2
+        assert await api.p2p.pub_sub_peers('Bad test topic') is None
+
+        with pytest.raises(ValueError):
+            await api.p2p.connect(info3)
+        with pytest.raises(ValueError):
+            await api.p2p.block_peer(info2.id)
+            await api.p2p.connect(info2)
+        await api.p2p.unblock_peer(info2.id)

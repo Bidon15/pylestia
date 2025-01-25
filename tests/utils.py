@@ -1,5 +1,6 @@
 import logging
 import os.path
+import re
 import subprocess
 from time import sleep
 
@@ -24,14 +25,20 @@ def stop_testnet() -> bool:
     return False
 
 
-def get_container_id(cnt: int = 1) -> str | None:
+def get_container_id(cnt: int = 1, return_all: bool = False) -> str | list[tuple[str, str]] | None:
+    container_id_list = []
     while cnt:
         proc = subprocess.run(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        containers = dict((line.split()[1], line.split()[0])
+
+        containers = dict((line.split()[-1], (line.split()[0], re.search(r':(\d+)->', line).group(1)))
                           for line in proc.stdout.decode('utf8').split('\n')[1:] if line)
-        for name, id in sorted(containers.items(), key=lambda x: x[0], reverse=True):
-            if name.startswith('bridge'):
+        for name, (id, port) in sorted(containers.items(), key=lambda x: x[0], reverse=True):
+            if 'bridge' in name and not return_all:
                 return id
+            elif 'bridge' in name:
+                container_id_list.append((id, port))
+        if len(container_id_list) >= 2:
+            return container_id_list
         sleep(1)
         cnt -= 1
         if not cnt:

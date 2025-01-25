@@ -12,6 +12,16 @@ from dataclasses import is_dataclass, asdict
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 from celestia._celestia import types  # noqa
 
+RPC_VALUE_ERRORS = [
+    'unmarshaling params',
+    'equal to 0',
+    'given height is from the future',
+    'invalid range',
+    'height must be bigger than zero',
+    'dial to self attempted',
+    'gater disallows connection to peer'
+]
+
 
 class Base64(bytes):
     """ Byte string. """
@@ -87,7 +97,14 @@ class RPC:
                 response.body = message
                 if future := self._pending.get(response.id):
                     if response.error is not None:
-                        future.set_exception(ConnectionError(f"RPC failed; {response.error.message}", response.error))
+                        error_body = getattr(response.error, "body", None)
+                        error_message = error_body.get('message', None).lower() if error_body else None
+                        if any(keyword in error_message for keyword in RPC_VALUE_ERRORS):
+                            future.set_exception(ValueError(error_message))
+                        elif error_message is None or error_body is None:
+                            future.set_exception(ConnectionError("RPC faled; undefined error"))
+                        else:
+                            future.set_exception(ConnectionError(f"RPC failed; {error_message}", response.error))
                     else:
                         future.set_result(response.result)
                 else:

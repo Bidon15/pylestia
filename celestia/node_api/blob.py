@@ -1,4 +1,5 @@
 import typing as t
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 from celestia._celestia import types  # noqa
@@ -28,6 +29,11 @@ class Blob:
             self.share_version = kwargs['share_version']
         self.index = index
 
+    @staticmethod
+    def deserializer(result):
+        if result is not None:
+            return Blob(**result)
+
 
 class TxConfig(t.TypedDict):
     signer_address: str | None
@@ -53,16 +59,14 @@ class BlobClient(Wrapper):
         """ Retrieves the blob by commitment under the given namespace and height.
         """
 
-        def deserializer(result):
-            if result is not None:
-                return Blob(**result)
-
         try:
             return await self._rpc.call("blob.Get", (height, Namespace(namespace), Commitment(commitment)),
-                                        deserializer)
-        except Exception as e:
+                                        Blob.deserializer)
+        except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None
+            else:
+                raise e
 
     async def get_all(self, height: int, namespace: Namespace, *namespaces: Namespace) -> list[Blob] | None:
         """ Returns all blobs under the given namespaces at the given height.
@@ -97,21 +101,30 @@ class BlobClient(Wrapper):
         """
         try:
             return await self._rpc.call("blob.GetCommitmentProof", (height, Namespace(namespace), Base64(commitment)))
-        except Exception as e:
+        except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None
+            else:
+                raise e
 
     async def get_proof(self, height: int, namespace: Namespace, commitment: Commitment) -> Proof | None:
         """ Retrieves proofs in the given namespaces at the given height by commitment.
         """
         try:
             return await self._rpc.call("blob.GetProof", (height, Namespace(namespace), Commitment(commitment)))
-        except Exception as e:
+        except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None
+            else:
+                raise e
 
     async def included(self, height: int, namespace: Namespace, proof: Proof, commitment: Commitment) -> bool:
         """ Checks whether a blob's given commitment(Merkle subtree root)
         is included at given height and under the namespace.
         """
         return await self._rpc.call("blob.Included", (height, Namespace(namespace), proof, Commitment(commitment)))
+
+    def subscribe(self, namespace: Namespace) -> AsyncIterator[Blob]:
+        """ The method subscribes to published blobs from the given namespace as they are included.
+        """
+        return self._rpc.iter("blob.Subscribe", (Namespace(namespace),))

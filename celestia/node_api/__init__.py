@@ -7,6 +7,7 @@ from websockets.asyncio.client import connect, ClientConnection
 from ._RPC import RPC
 from .blob import BlobClient
 from .header import HeaderClient
+from .p2p import P2PClient
 from .state import StateClient
 
 
@@ -43,6 +44,10 @@ class Client:
         @property
         def header(self):
             return HeaderClient(self._rpc)
+
+        @property
+        def p2p(self):
+            return P2PClient(self._rpc)
 
     def connect(self, auth_token: str = None, **options: t.Any) -> AbstractAsyncContextManager[NodeAPI]:
         """ Creates and return connection context manager. """
