@@ -94,7 +94,9 @@ class RPC:
             finally:
                 self._transport = None
                 for id in tuple(self._pending.keys()):
-                    self._pending[id].set_exception(ConnectionError("RPC closed"))
+                    future = self._pending.pop(id)
+                    if not future.done():
+                        self._pending[id].set_exception(ConnectionError("RPC closed"))
                 self._pending.clear()
                 # ToDo: cleanup subscription
 

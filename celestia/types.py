@@ -71,5 +71,11 @@ class SubmitBlobResult:
     commitments: tuple[Commitment, ...]
 
 
+@dataclass
+class SubscriptionBlobResult:
+    height: int
+    blobs: tuple[Blob, ...]
+
+
 type CommitmentProof = dict[str, t.Any]
 type Proof = dict[str, t.Any]

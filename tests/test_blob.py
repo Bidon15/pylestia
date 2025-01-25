@@ -4,6 +4,7 @@ import pytest
 
 from celestia.node_api import Client
 from celestia.node_api.blob import Blob
+from celestia.types import Namespace
 
 
 @pytest.mark.asyncio
@@ -93,13 +94,24 @@ async def test_blob_exceptions(auth_token):
 async def test_blob_subscribe(auth_token):
     result = []
     client = Client()
-    async with client.connect(auth_token) as api:
-        async with asyncio.timeout(30):
-            i = 0
-            async for blob in api.blob.subscribe(b'qwe'):
-                result.append(blob)
-                assert len(result) == i + 1
+
+    async def submitter(api):
+        for i in range(5):
+            if i == 2:
+                await api.blob.submit(Blob(b'abc', f'QWERTY{i}'.encode()))
+            else:
                 await api.blob.submit(Blob(b'qwe', f'QWERTY{i}'.encode()))
-                i += 1
-                if len(result) == 4:
-                    break
+
+    async with client.connect(auth_token) as api:
+        submitter_tack = asyncio.create_task(submitter(api))
+        try:
+            async with asyncio.timeout(30):
+                async for blob in api.blob.subscribe(b'qwe'):
+                    result.append(blob)
+                    if len(result) == 4:
+                        break
+        finally:
+            submitter_tack.cancel()
+
+    assert len(result) == 4
+    assert tuple(item.blobs[0].namespace for item in result) == (Namespace(b'qwe'), ) * 4

@@ -3,7 +3,8 @@ from collections.abc import AsyncIterator
 
 from celestia._celestia import types  # noqa
 
-from celestia.types import Base64, Commitment, Namespace, Blob, SubmitBlobResult, TxConfig, CommitmentProof, Proof
+from celestia.types import Base64, Commitment, Namespace, Blob, SubmitBlobResult, TxConfig, CommitmentProof, Proof, \
+    SubscriptionBlobResult
 from ._RPC import Wrapper
 
 
@@ -78,7 +79,16 @@ class BlobClient(Wrapper):
         """
         return await self._rpc.call("blob.Included", (height, Namespace(namespace), proof, Commitment(commitment)))
 
-    def subscribe(self, namespace: Namespace) -> AsyncIterator[Blob]:
+    async def subscribe(self, namespace: Namespace) -> AsyncIterator[SubscriptionBlobResult | None]:
         """ The method subscribes to published blobs from the given namespace as they are included.
         """
-        return self._rpc.iter("blob.Subscribe", (Namespace(namespace),))
+
+        def deserializer(result):
+            height = result['Height']
+            blobs = result.get('Blobs')
+            if blobs is not None:
+                return SubscriptionBlobResult(height, tuple(Blob(**kwargs) for kwargs in blobs))
+
+        async for subs_blob_result in self._rpc.iter("blob.Subscribe", (Namespace(namespace),), deserializer):
+            if subs_blob_result is not None:
+                yield subs_blob_result
