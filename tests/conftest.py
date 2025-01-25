@@ -24,14 +24,14 @@ async def auth_token(container_id):
     auth_token = get_auth_token(container_id)
     assert auth_token, "Failed to get auth token"
     cnt = 30
-    client = Client('localhost', 26658)
+    client = Client()
     while cnt:
         try:
             async with client.connect(auth_token) as api:
                 balance = await api.state.balance()
                 if balance.amount:
                     break
-        except Exception:
+        except Exception as exc:
             pass
         cnt -= 1
         await asyncio.sleep(1)

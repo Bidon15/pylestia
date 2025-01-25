@@ -1,5 +1,6 @@
 import asyncio
 import typing as t
+from asyncio import CancelledError
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from websockets.asyncio.client import connect, ClientConnection
@@ -15,16 +16,21 @@ class Client:
     """ Celestia Node API client
     """
 
-    def __init__(self,
+    def __init__(self, auth_token: str = None,
                  host: str = 'localhost', port: int = 26658,
-                 auth_token: str = None, response_timeout: int = 180, **options: t.Any):
-        self.__options = dict(options, url=f'ws://{host}:{port}',
+                 response_timeout: int = 180, **options: t.Any):
+        self.__options = dict(options, host=host, port=port,
                               auth_token=auth_token, response_timeout=response_timeout)
 
     @property
     def options(self):
         """ Client create options """
         return self.__options
+
+    @property
+    def url(self):
+        """ Connection URL """
+        return f'ws://{self.options["host"]}:{self.options["port"]}'
 
     class NodeAPI:
         """ Celestia node API
@@ -53,22 +59,25 @@ class Client:
         """ Creates and return connection context manager. """
         headers = []
         options = dict(self.options, **options)
-        url = options['url']
         response_timeout = options['response_timeout']
         auth_token = auth_token or options['auth_token']
         if auth_token is not None:
             headers.append(('Authorization', f'Bearer {auth_token}'))
 
         async def listener(connection: ClientConnection, receiver: t.Callable[[str | bytes], None]):
-            async for message in connection:
-                receiver(message)
+            try:
+                async for message in connection:
+                    receiver(message)
+            except CancelledError:
+                pass
 
         @asynccontextmanager
         async def connect_context():
             rpc = RPC(response_timeout)
-            async with connect(url, additional_headers=headers) as connection:
+            async with connect(self.url, additional_headers=headers) as connection:
                 async with rpc.connect(connection) as receiver:
                     self._listener_task = asyncio.create_task(listener(connection, receiver))
                     yield self.NodeAPI(rpc)
+                    self._listener_task.cancel()
 
         return connect_context()

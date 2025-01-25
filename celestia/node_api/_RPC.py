@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from dataclasses import is_dataclass, asdict
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
-from celestia._celestia import types  # noqa
 
 RPC_VALUE_ERRORS = [
     'unmarshaling params',
@@ -22,30 +21,7 @@ RPC_VALUE_ERRORS = [
     'gater disallows connection to peer'
 ]
 
-
-class Base64(bytes):
-    """ Byte string. """
-
-    def __new__(cls, value: str | bytes):
-        if isinstance(value, str):
-            value = b64decode(value)
-        return super().__new__(cls, value)
-
-    def __str__(self) -> str:
-        return b64encode(self).decode('ascii')
-
-
-class Namespace(Base64):
-    """ Celestia namespace. """
-
-    def __new__(cls, value: str | bytes):
-        value = super().__new__(cls, value)
-        value = types.normalize_namespace(value)
-        return super().__new__(cls, value)
-
-
-class Commitment(Base64):
-    """Celestia commitment"""
+from celestia.types import Base64
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -133,8 +109,9 @@ class RPC:
         await self._transport.send(json.dumps(request.body, cls=JSONEncoder))
         future = self._pending[id] = Future()
         future.add_done_callback(lambda _: self._pending.pop(id, None))
-        result = await future
-        return deserializer(result)
+        async with asyncio.timeout(self._response_timeout):
+            result = await future
+            return deserializer(result)
 
     async def iter(self, method: str, params: tuple[t.Any, ...] = None,
                    deserializer: t.Callable[[t.Any], t.Any] = None

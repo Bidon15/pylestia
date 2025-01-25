@@ -1,56 +1,10 @@
 import typing as t
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
 
 from celestia._celestia import types  # noqa
 
-from ._RPC import Wrapper, Base64, Commitment, Namespace
-
-
-@dataclass
-class Blob:
-    namespace: Namespace
-    data: Base64
-    commitment: Commitment
-    share_version: int
-    index: int | None = None
-
-    def __init__(self, namespace: Namespace | str | bytes, data: Base64 | str | bytes,
-                 commitment: Commitment | str | bytes | None = None, share_version: int | None = 0,
-                 index: int | None = None):
-        self.namespace = namespace if isinstance(namespace, Namespace) else Namespace(namespace)
-        self.data = data if isinstance(data, Base64) else Base64(data)
-        if commitment is not None:
-            self.commitment = commitment if isinstance(commitment, Commitment) else Commitment(commitment)
-            self.share_version = share_version or 0
-        else:
-            kwargs = types.normalize_blob(self.namespace, self.data)
-            self.commitment = Commitment(kwargs['commitment'])
-            self.share_version = kwargs['share_version']
-        self.index = index
-
-    @staticmethod
-    def deserializer(result):
-        if result is not None:
-            return Blob(**result)
-
-
-class TxConfig(t.TypedDict):
-    signer_address: str | None
-    key_name: str | None
-    gas_price: float | None
-    gas: int | None
-    fee_granter_address: str | None
-
-
-@dataclass
-class SubmitBlobResult:
-    height: int
-    commitments: tuple[Commitment, ...]
-
-
-type CommitmentProof = dict[str, t.Any]
-type Proof = dict[str, t.Any]
+from celestia.types import Base64, Commitment, Namespace, Blob, SubmitBlobResult, TxConfig, CommitmentProof, Proof
+from ._RPC import Wrapper
 
 
 class BlobClient(Wrapper):
@@ -58,9 +12,9 @@ class BlobClient(Wrapper):
     async def get(self, height: int, namespace: Namespace, commitment: Commitment) -> Blob | None:
         """ Retrieves the blob by commitment under the given namespace and height.
         """
-
         try:
-            return await self._rpc.call("blob.Get", (height, Namespace(namespace), Commitment(commitment)),
+            return await self._rpc.call("blob.Get",
+                                        (height, Namespace(namespace), Commitment(commitment)),
                                         Blob.deserializer)
         except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():

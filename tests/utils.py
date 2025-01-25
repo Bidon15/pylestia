@@ -32,7 +32,7 @@ def get_container_id(cnt: int = 1, return_all: bool = False) -> str | list[tuple
 
         containers = dict((line.split()[-1], (line.split()[0], re.search(r':(\d+)->', line).group(1)))
                           for line in proc.stdout.decode('utf8').split('\n')[1:] if line)
-        for name, (id, port) in sorted(containers.items(), key=lambda x: x[0], reverse=True):
+        for name, (id, port) in sorted(containers.items(), key=lambda x: x[0]):
             if 'bridge' in name and not return_all:
                 return id
             elif 'bridge' in name:
