@@ -3,7 +3,6 @@ import json
 import typing as t
 import uuid
 from asyncio import Future
-from base64 import b64decode, b64encode
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
@@ -18,7 +17,12 @@ RPC_VALUE_ERRORS = [
     'invalid range',
     'height must be bigger than zero',
     'dial to self attempted',
-    'gater disallows connection to peer'
+    'gater disallows connection to peer',
+    'notfound desc = delegation with delegator',
+    'unknown desc = failed to execute message; message index: 0: invalid shares amount:',
+    'cannot redelegate to the same validator',
+    'too many unbonding delegation entries for (delegator, validator) tuple',
+    'redelegation not found for delegator address'
 ]
 
 from celestia.types import Base64

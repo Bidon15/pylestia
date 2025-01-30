@@ -113,11 +113,36 @@ provision_bridge_nodes() {
 # https://github.com/celestiaorg/celestia-app/blob/main/scripts/single-node.sh
 setup_private_validator() {
   local validator_addr
+  local key_file="$CREDENTIALS_DIR/"$NODE_NAME".key"
+  local plaintext_key_file="$CREDENTIALS_DIR/"$NODE_NAME".plaintext-key"
+  local addr_file="$CREDENTIALS_DIR/"$NODE_NAME"-conv.addr"
+  local addr_before_conv_file="$CREDENTIALS_DIR/"$NODE_NAME".addr"
 
   # Initialize the validator
   celestia-appd init "$P2P_NETWORK" --chain-id "$P2P_NETWORK"
-  # Derive a new private key for the validator
-  celestia-appd keys add "$NODE_NAME" --keyring-backend="test"
+  # Initialize the validator
+  if [ ! -e "$key_file" ]; then
+    echo "Creating a new keys for the $NODE_NAME"
+    # Derive a new private key for the validator
+    celestia-appd keys add "$NODE_NAME" --keyring-backend="test"
+    local validator_addr
+    validator_addr="$(celestia-appd keys show "$NODE_NAME" -a --keyring-backend="test")"
+    # export key
+    echo "password" | celestia-appd keys export "$NODE_NAME" 2> "$key_file.lock"
+    # export also plaintext key for convenience in tests
+    echo y | celestia-appd keys export "$NODE_NAME" --unsafe --unarmored-hex 2> "${plaintext_key_file}"
+    # the `.lock` file and `mv` ensures that readers read file only after finished writing
+    mv "$key_file.lock" "$key_file"
+    # export associated address
+    node_address "$NODE_NAME" > "$addr_before_conv_file"
+    celestia-appd addr-conversion "$validator_addr" > "$addr_file"
+    echo "password" | celestia-appd keys export "$NODE_NAME" 2> "$key_file.lock"
+  else
+    # otherwise, just import it
+    echo $NODE_NAME
+    echo "password" | celestia-appd keys import "$NODE_NAME" "$key_file" \
+      --keyring-backend="test"
+  fi
   validator_addr="$(celestia-appd keys show "$NODE_NAME" -a --keyring-backend="test")"
   # Create a validator's genesis account for the genesis.json with an initial bag of coins
   celestia-appd add-genesis-account "$validator_addr" "$VALIDATOR_COINS"

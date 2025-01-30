@@ -19,6 +19,24 @@ def container_id():
         assert container_id, "Failed to start testnet"
 
 
+@pytest.fixture(scope='session')
+def container_ids():
+    if containers_id := get_container_id(return_all=True):
+        containers = []
+        for container_id in containers_id:
+            containers.append((get_auth_token(container_id[0]), container_id[1]))
+        yield containers
+    else:
+        start_testnet()
+        if containers_id := get_container_id(30, return_all=True):
+            containers = []
+            for container_id in containers_id:
+                containers.append((get_auth_token(container_id[0]), container_id[1]))
+            yield containers
+            stop_testnet()
+        assert containers_id, "Failed to start testnet"
+
+
 @pytest_asyncio.fixture(scope='session')
 async def auth_token(container_id):
     auth_token = get_auth_token(container_id)
@@ -42,3 +60,8 @@ async def auth_token(container_id):
 @pytest.fixture(scope='session')
 def bridge_address():
     yield 'celestia1t52q7uqgnjfzdh3wx5m5phvma3umrq8k6tq2p9'
+
+
+@pytest.fixture(scope='session')
+def validator_addresses():
+    yield 'celestiavaloper1uqmt6u5zwzucxjkg7pd30qw8lc6l4c8xxv9288', 'celestiavaloper1d3p6vssf2cmsjyzsqx5tsvfzfuyyytky5fen0y'
