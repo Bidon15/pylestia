@@ -26,8 +26,7 @@ class StateClient(Wrapper):
                                     lambda kwargs: celestia_types.Balance(**kwargs))
 
     async def begin_redelegate(self, src_val_addr: celestia_types.Address, dst_val_addr: celestia_types.Address,
-                               amount: int,
-                               **config: t.Unpack[celestia_types.TxConfig]) -> celestia_types.TXResponse:
+                               amount: int, **config: t.Unpack[celestia_types.TxConfig]) -> celestia_types.TXResponse:
         """ Sends a user's delegated tokens to a new validator for redelegation.
         """
         return await self._rpc.call("state.BeginRedelegate", (src_val_addr, dst_val_addr, str(amount), config),
@@ -88,8 +87,9 @@ class StateClient(Wrapper):
                                 creation_height=redelegation_entry['creation_height'],
                                 completion_time=redelegation_entry['completion_time'],
                                 initial_balance=int(redelegation_entry['initial_balance']),
-                                shares_dst=int(redelegation_entry['shares_dst']),
-                            ) for redelegation_entry in redelegation_response['redelegation']['entries']]
+                                shares_dst=float(redelegation_entry['shares_dst']),
+                            ) for redelegation_entry in redelegation_response['redelegation']['entries']] if
+                            redelegation_response['redelegation']['entries'] else None
                         ),
                         entries=[celestia_types.RedelegationResponseEntry(
                             redelegation_entry=celestia_types.RedelegationEntry(
@@ -97,12 +97,12 @@ class StateClient(Wrapper):
                                 completion_time=redelegation_response_entry['redelegation_entry']['completion_time'],
                                 initial_balance=int(
                                     redelegation_response_entry['redelegation_entry']['initial_balance']),
-                                shares_dst=int(redelegation_response_entry['redelegation_entry']['shares_dst']),
+                                shares_dst=float(redelegation_response_entry['redelegation_entry']['shares_dst']),
                             ),
                             balance=int(redelegation_response_entry['balance'])
                         ) for redelegation_response_entry in redelegation_response['entries']]
                     ) for redelegation_response in result['redelegation_responses']],
-                    pagination=celestia_types.Pagination(**result['pagination'])
+                    pagination=celestia_types.Pagination(**result.get('pagination', {}))
                 )
 
         return await self._rpc.call("state.QueryRedelegations", (src_val_addr, dst_val_addr,), deserializer)

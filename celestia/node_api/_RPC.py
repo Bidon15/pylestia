@@ -22,7 +22,8 @@ RPC_VALUE_ERRORS = [
     'unknown desc = failed to execute message; message index: 0: invalid shares amount:',
     'cannot redelegate to the same validator',
     'too many unbonding delegation entries for (delegator, validator) tuple',
-    'redelegation not found for delegator address'
+    'redelegation not found for delegator address',
+    'too many redelegation entries for (delegator, src-validator, dst-validator)'
 ]
 
 from celestia.types import Base64

@@ -63,5 +63,14 @@ def bridge_address():
 
 
 @pytest.fixture(scope='session')
+def bridge_addresses():
+    yield ('celestia1t52q7uqgnjfzdh3wx5m5phvma3umrq8k6tq2p9',
+           'celestia16ws8cxx9ykl4598qgshvt36mejpkeyvzayndth',
+           'celestia10yeexpgcpx88qru4ca63frhw3jqua4qw8swxy0')
+
+
+@pytest.fixture(scope='session')
 def validator_addresses():
-    yield 'celestiavaloper1uqmt6u5zwzucxjkg7pd30qw8lc6l4c8xxv9288', 'celestiavaloper1d3p6vssf2cmsjyzsqx5tsvfzfuyyytky5fen0y'
+    yield ('celestiavaloper1tzkpek429yxtvrshqh5yvqhvq4ydu3pjrshjhh',
+           'celestiavaloper1uqmt6u5zwzucxjkg7pd30qw8lc6l4c8xxv9288',
+           'celestiavaloper12crcjleegs25gp8wdx3nwn2m9kvfdmc34apd28')

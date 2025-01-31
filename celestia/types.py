@@ -152,8 +152,8 @@ class RedelegationResponse:
 
 @dataclass
 class Pagination:
-    next_key: str
-    total: int
+    next_key: str = None
+    total: int = None
 
 
 @dataclass
