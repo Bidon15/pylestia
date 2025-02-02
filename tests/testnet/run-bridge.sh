@@ -95,7 +95,7 @@ main() {
   celestia bridge start \
     --rpc.skip-auth="$SKIP_AUTH" \
     --rpc.addr 0.0.0.0 \
-    --core.ip validator \
+    --core.ip validator-0 \
     --keyring.keyname "$NODE_NAME" \
     --p2p.network "$P2P_NETWORK"
 }

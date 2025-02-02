@@ -1,6 +1,6 @@
 services:
 
-  validator:
+  validator-0:
     image: validator
     platform: "linux/amd64"
     build:
@@ -8,8 +8,40 @@ services:
     environment:
       # provide amount of bridge nodes to provision (default: 2)
       - BRIDGE_COUNT=3
+      - NODE_ID=0
+      - VALIDATOR_COUNT=2
     ports:
       - 19090:9090
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
+  validator-1:
+    image: validator
+    platform: "linux/amd64"
+    build:
+      dockerfile: Dockerfile.validator
+    environment:
+      # provide amount of bridge nodes to provision (default: 2)
+      - BRIDGE_COUNT=3
+      - NODE_ID=1
+    ports:
+      - 19091:9090
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
+  validator-2:
+    image: validator
+    platform: "linux/amd64"
+    build:
+      dockerfile: Dockerfile.validator
+    environment:
+      # provide amount of bridge nodes to provision (default: 2)
+      - BRIDGE_COUNT=3
+      - NODE_ID=2
+    ports:
+      - 19092:9090
     volumes:
       - credentials:/credentials
       - genesis:/genesis

@@ -1,6 +1,7 @@
 import typing as t
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
+
 from celestia._celestia import types as ext  # noqa
 
 
@@ -59,6 +60,7 @@ class Blob:
 
 class TxConfig(t.TypedDict):
     signer_address: str | None
+    is_gas_price_set: bool | None
     key_name: str | None
     gas_price: float | None
     gas: int | None
@@ -79,3 +81,102 @@ class SubscriptionBlobResult:
 
 type CommitmentProof = dict[str, t.Any]
 type Proof = dict[str, t.Any]
+
+
+@dataclass
+class Balance:
+    amount: int
+    denom: str
+
+    def __init__(self, amount: int, denom: str):
+        self.amount = int(amount)
+        self.denom = denom
+
+
+type Address = str
+
+
+@dataclass
+class TXResponse:
+    height: int
+    txhash: str
+    logs: list[str]
+    events: list[str]
+
+
+@dataclass
+class Delegation:
+    delegator_address: Address
+    validator_address: Address
+    shares: float
+
+
+@dataclass
+class DelegationResponse:
+    delegation: Delegation
+    balance: Balance
+
+
+@dataclass
+class QueryDelegationResponse:
+    delegation_response: DelegationResponse
+
+
+@dataclass
+class RedelegationEntry:
+    creation_height: int
+    completion_time: str
+    initial_balance: int
+    shares_dst: float
+
+
+@dataclass
+class Redelegation:
+    delegator_address: Address
+    validator_src_address: Address
+    validator_dst_address: Address
+    entries: list[RedelegationEntry]
+
+
+@dataclass
+class RedelegationResponseEntry:
+    redelegation_entry: RedelegationEntry
+    balance: int
+
+
+@dataclass
+class RedelegationResponse:
+    redelegation: Redelegation
+    entries: list[RedelegationResponseEntry]
+
+
+@dataclass
+class Pagination:
+    next_key: str = None
+    total: int = None
+
+
+@dataclass
+class QueryRedelegationResponse:
+    redelegation_responses: list[RedelegationResponse]
+    pagination: Pagination
+
+
+@dataclass
+class UnbondEntry:
+    creation_height: int
+    completion_time: str
+    initial_balance: int
+    balance: int
+
+
+@dataclass
+class Unbond:
+    delegator_address: Address
+    validator_address: Address
+    entries: list[UnbondEntry]
+
+
+@dataclass
+class QueryUnbondingDelegationResponse:
+    unbond: Unbond

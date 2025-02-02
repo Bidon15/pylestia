@@ -5,25 +5,6 @@ import pytest
 
 from celestia.node_api import Client
 from celestia.node_api.p2p import Connectedness, Reachability
-from tests.utils import get_auth_token, get_container_id, start_testnet, stop_testnet
-
-
-@pytest.fixture(scope='session')
-def container_ids():
-    if containers_id := get_container_id(return_all=True):
-        containers = []
-        for container_id in containers_id:
-            containers.append((get_auth_token(container_id[0]), container_id[1]))
-        yield containers
-    else:
-        start_testnet()
-        if containers_id := get_container_id(30, return_all=True):
-            containers = []
-            for container_id in containers_id:
-                containers.append((get_auth_token(container_id[0]), container_id[1]))
-            yield containers
-            stop_testnet()
-        assert containers_id, "Failed to start testnet"
 
 
 @pytest.mark.asyncio
