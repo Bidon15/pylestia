@@ -81,3 +81,6 @@ class Client:
                     self._listener_task.cancel()
 
         return connect_context()
+
+
+NodeAPI = Client.NodeAPI
