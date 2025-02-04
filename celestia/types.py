@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 from celestia._celestia import types as ext  # noqa
 
+type ExtendedHeader = dict[str, t.Any]
+type SampleCoords = dict[str, t.Any]
+
 
 class Base64(bytes):
     """ Byte string. """
@@ -180,3 +183,34 @@ class Unbond:
 @dataclass
 class QueryUnbondingDelegationResponse:
     unbond: Unbond
+
+
+@dataclass
+class Worker:
+    job_type: str
+    current: int
+    from_: int
+    to: int
+
+
+@dataclass
+class SamplingStats:
+    head_of_sampled_chain: int
+    head_of_catchup: int
+    network_head_height: int
+    concurrency: int
+    catch_up_done: bool
+    is_running: bool
+    workers: list[Worker] = None
+
+
+@dataclass
+class ExtendedDataSquare:
+    data_square: list[str]
+    codec: str
+
+
+@dataclass
+class NamespaceData:
+    share: list[t.Any]
+    proof: dict[str, t.Any]

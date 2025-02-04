@@ -24,6 +24,7 @@ RPC_VALUE_ERRORS = [
     'too many unbonding delegation entries for (delegator, validator) tuple',
     'redelegation not found for delegator address',
     'too many redelegation entries for (delegator, src-validator, dst-validator)'
+    'datastore: key not found'
 ]
 
 from celestia.types import Base64
