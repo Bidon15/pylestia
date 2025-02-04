@@ -80,7 +80,7 @@ async def test_p2p(container_ids):
         assert Reachability.Unknown.value == await api.p2p.nat_status()
 
         topic = await api.p2p.pub_sub_topics()
-        assert len(await api.p2p.pub_sub_peers(topic[0])) == 2
+        assert len(await api.p2p.pub_sub_peers(topic[0])) != 0
         assert await api.p2p.pub_sub_peers('Bad test topic') is None
 
         with pytest.raises(ValueError):

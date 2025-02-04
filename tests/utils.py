@@ -25,8 +25,11 @@ def stop_testnet() -> bool:
     return False
 
 
-def get_container_id(cnt: int = 1, return_all: bool = False) -> str | list[tuple[str, str]] | None:
-    container_id_list = []
+def get_container_id(cnt: int = 1, return_all: bool = False) -> str | dict[str, list[tuple[str, str]]] | None:
+    containers_storage = {
+        'bridge': [],
+        'light': []
+    }
     while cnt:
         proc = subprocess.run(['docker', 'ps'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -36,9 +39,11 @@ def get_container_id(cnt: int = 1, return_all: bool = False) -> str | list[tuple
             if 'bridge' in name and not return_all:
                 return id
             elif 'bridge' in name:
-                container_id_list.append((id, port))
-        if len(container_id_list) >= 2:
-            return container_id_list
+                containers_storage['bridge'].append((id, port))
+            elif 'light' in name:
+                containers_storage['light'].append((id, port))
+        if len(containers_storage['bridge']) + len(containers_storage['light']) >= 2:
+            return containers_storage
         sleep(1)
         cnt -= 1
         if not cnt:
@@ -46,9 +51,9 @@ def get_container_id(cnt: int = 1, return_all: bool = False) -> str | list[tuple
                 logging.error(proc.stderr.decode('utf8'))
 
 
-def get_auth_token(container_id: str) -> str:
+def get_auth_token(container_id: str, node_type: str | None = 'bridge') -> str:
     args = ['docker', 'exec', '-i', container_id,
-            'celestia', 'bridge', 'auth', 'admin', '--p2p.network', 'private']
+            'celestia', node_type, 'auth', 'admin', '--p2p.network', 'private']
     cnt = 10
     while cnt:
         proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

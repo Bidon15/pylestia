@@ -21,18 +21,14 @@ def container_id():
 
 @pytest.fixture(scope='session')
 def container_ids():
-    if containers_id := get_container_id(return_all=True):
-        containers = []
-        for container_id in containers_id:
-            containers.append((get_auth_token(container_id[0]), container_id[1]))
-        yield containers
+    if containers := get_container_id(return_all=True):
+        yield *[(get_auth_token(container[0]), container[1]) for container in containers['bridge']], *[
+            (get_auth_token(container[0], 'light'), container[1]) for container in containers['light']]
     else:
         start_testnet()
         if containers_id := get_container_id(30, return_all=True):
-            containers = []
-            for container_id in containers_id:
-                containers.append((get_auth_token(container_id[0]), container_id[1]))
-            yield containers
+            yield *[(get_auth_token(container_id[0]), container_id[1]) for container_id in containers_id['bridge']], *[
+                (get_auth_token(container_id[0], 'light'), container_id[1]) for container_id in containers_id['light']]
             stop_testnet()
         assert containers_id, "Failed to start testnet"
 
@@ -60,6 +56,11 @@ async def auth_token(container_id):
 @pytest.fixture(scope='session')
 def bridge_address():
     yield 'celestia1t52q7uqgnjfzdh3wx5m5phvma3umrq8k6tq2p9'
+
+
+@pytest.fixture(scope='session')
+def light_address():
+    yield 'celestia1ll9pjlvy8cg7ux3pr98sc96nlpwgzt48j2mjwz'
 
 
 @pytest.fixture(scope='session')
