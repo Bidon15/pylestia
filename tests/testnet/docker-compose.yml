@@ -8,10 +8,11 @@ services:
     environment:
       # provide amount of bridge nodes to provision (default: 2)
       - BRIDGE_COUNT=3
-      - NODE_ID=0
       - VALIDATOR_COUNT=2
+      - LIGHT_COUNT=1
+      - NODE_ID=0
     ports:
-      - 19090:9090
+      - "19090:9090"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
@@ -22,11 +23,9 @@ services:
     build:
       dockerfile: Dockerfile.validator
     environment:
-      # provide amount of bridge nodes to provision (default: 2)
-      - BRIDGE_COUNT=3
       - NODE_ID=1
     ports:
-      - 19091:9090
+      - "19091:9090"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
@@ -37,11 +36,9 @@ services:
     build:
       dockerfile: Dockerfile.validator
     environment:
-      # provide amount of bridge nodes to provision (default: 2)
-      - BRIDGE_COUNT=3
       - NODE_ID=2
     ports:
-      - 19092:9090
+      - "19092:9090"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
@@ -52,14 +49,11 @@ services:
     build:
       dockerfile: Dockerfile.bridge
     environment:
-      # provide an id for the bridge node (default: 0)
-      # each node should have a next natural number starting from 0
       - NODE_ID=0
-      # setting SKIP_AUTH to true disables the use of JWT for authentication
       - SKIP_AUTH=true
-      - CELESTIA_ENABLE_QUIC=1
     ports:
-      - 26658:26658
+      - "26658:26658"
+      - "19093:9090"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
@@ -71,12 +65,9 @@ services:
       context: .
       dockerfile: Dockerfile.bridge
     environment:
-      # provide an id for the bridge node (default: 0)
-      # each node should have a next natural number starting from 0
       - NODE_ID=1
-      - CELESTIA_ENABLE_QUIC=1
     ports:
-      - 36658:26658
+      - "36658:26658"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
@@ -88,12 +79,24 @@ services:
       context: .
       dockerfile: Dockerfile.bridge
     environment:
-      # provide an id for the bridge node (default: 0)
-      # each node should have a next natural number starting from 0
       - NODE_ID=2
-      - CELESTIA_ENABLE_QUIC=1
     ports:
-      - 46658:26658
+      - "46658:26658"
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
+  light-0:
+    image: light
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    environment:
+      - NODE_ID=0
+      - NODE_TYPE=light
+    ports:
+      - "56658:26658"
     volumes:
       - credentials:/credentials
       - genesis:/genesis
