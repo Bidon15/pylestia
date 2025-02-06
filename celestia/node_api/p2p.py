@@ -1,62 +1,6 @@
-import typing as t
-from dataclasses import dataclass
-from enum import Enum
+from celestia.types.p2p import PeerID, BandwidthStats, Connectedness, AddrInfo, Reachability, ResourceManagerStat
 
 from ._RPC import Wrapper
-
-type PeerID = str
-type Address = list[str]
-
-
-@dataclass
-class ResourceManagerStat:
-    system: dict[str, t.Any]
-    transient: dict[str, t.Any]
-    services: dict[str, t.Any]
-    protocols: dict[str, t.Any]
-    peers: dict[str, t.Any]
-
-    @staticmethod
-    def deserializer(result):
-        if result is not None:
-            result_lower = {key.lower(): value for key, value in result.items()}
-            return ResourceManagerStat(**result_lower)
-
-
-@dataclass
-class BandwidthStats:
-    total_in: int
-    total_out: int
-    rate_in: float
-    rate_out: float
-
-    @staticmethod
-    def deserializer(result):
-        if result is not None:
-            return BandwidthStats(total_in=result["TotalIn"], total_out=result["TotalOut"],
-                                  rate_in=result["RateIn"], rate_out=result["RateOut"])
-
-
-@dataclass
-class AddrInfo:
-    id: PeerID
-    addrs: Address
-
-    @staticmethod
-    def deserializer(result):
-        if result is not None:
-            return AddrInfo(id=result["ID"], addrs=result["Addrs"])
-
-
-class Connectedness(Enum):
-    NOT_CONNECTED = 0
-    CONNECTED = 1
-
-
-class Reachability(Enum):
-    Unknown = 0
-    Public = 1
-    Private = 2
 
 
 class P2PClient(Wrapper):
@@ -64,7 +8,6 @@ class P2PClient(Wrapper):
     async def bandwidth_for_peer(self, peer_id: PeerID) -> BandwidthStats:
         """ Returns a Stats struct with bandwidth metrics associated with the given peer.ID.
         The metrics returned include all traffic sent / received for the peer, regardless of protocol."""
-
         return await self._rpc.call("p2p.BandwidthForPeer", (peer_id,), BandwidthStats.deserializer)
 
     async def bandwidth_for_protocol(self, protocol_id: str) -> BandwidthStats:

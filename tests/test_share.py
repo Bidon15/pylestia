@@ -1,17 +1,25 @@
 import pytest
 
+from celestia.common_types import Blob
 from celestia.node_api import Client
+from celestia.types.share import SampleCoords
 
 
 @pytest.mark.asyncio
-async def test_share(container_ids):
-    bridges, light_container = container_ids[:3], container_ids[3]
-    client = Client(port=bridges[0][1])
-    async with client.connect(light_container[0][0]) as api:
-        eds = await api.share.get_eds(5)
-        assert (await api.share.get_namespace_data(1, b'qweqwe')) == []
-        range_data = await api.share.get_range(5, 0, 1)
-        samples = await api.share.get_samples((await api.header.get_by_height(5)), [{'row': 0, 'col': 1}])
-        coords_data = await api.share.get_share(5, 0, 1)
-        assert range_data['Proof']['data'][0] == samples[0] == coords_data == eds.data_square[0]
-        await api.share.get_available(5)
+async def test_share(auth_token):
+    client = Client()
+    async with client.connect(auth_token) as api:
+        result = await api.blob.submit(
+            Blob(b'abc', b'0123456789'),
+            Blob(b'abc', b'QWERTYUIOP'),
+            Blob(b'xyz', b'ASDFGHJKL'),
+        )
+
+        eds = await api.share.get_eds(result.height)
+        gnd = await api.share.get_namespace_data(result.height, b'abc')
+        range_data = await api.share.get_range(result.height, 1, 2)
+        samples = await api.share.get_samples((await api.header.get_by_height(result.height)),
+                                              [SampleCoords(row=0, col=1)])
+        coords_data = await api.share.get_share(result.height, 0, 1)
+        assert coords_data == samples[0] == range_data.proof.data[0] == eds.data_square[1] == gnd[0].shares[0]
+        await api.share.get_available(result.height)

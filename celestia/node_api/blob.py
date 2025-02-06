@@ -3,8 +3,8 @@ from collections.abc import AsyncIterator
 
 from celestia._celestia import types  # noqa
 
-from celestia.types import Base64, Commitment, Namespace, Blob, SubmitBlobResult, TxConfig, CommitmentProof, Proof, \
-    SubscriptionBlobResult
+from celestia.common_types import Blob, Namespace, TxConfig, Commitment
+from celestia.types.blob import SubmitBlobResult, Proof, CommitmentProof, SubscriptionBlobResult
 from ._RPC import Wrapper
 
 
@@ -14,8 +14,7 @@ class BlobClient(Wrapper):
         """ Retrieves the blob by commitment under the given namespace and height.
         """
         try:
-            return await self._rpc.call("blob.Get",
-                                        (height, Namespace(namespace), Commitment(commitment)),
+            return await self._rpc.call("blob.Get", (height, Namespace(namespace), Commitment(commitment)),
                                         Blob.deserializer)
         except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
@@ -51,22 +50,25 @@ class BlobClient(Wrapper):
         return await self._rpc.call("blob.Submit", (blobs, options), deserializer)
 
     async def get_commitment_proof(self, height: int, namespace: Namespace,
-                                   commitment: Base64) -> CommitmentProof | None:
+                                   commitment: Commitment) -> CommitmentProof | None:
         """ Generates a commitment proof for a share commitment.
         """
         try:
-            return await self._rpc.call("blob.GetCommitmentProof", (height, Namespace(namespace), Base64(commitment)))
+            return await self._rpc.call("blob.GetCommitmentProof",
+                                        (height, Namespace(namespace), Commitment(commitment)),
+                                        CommitmentProof.deserializer)
         except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None
             else:
                 raise e
 
-    async def get_proof(self, height: int, namespace: Namespace, commitment: Commitment) -> Proof | None:
+    async def get_proof(self, height: int, namespace: Namespace, commitment: Commitment) -> list[Proof] | None:
         """ Retrieves proofs in the given namespaces at the given height by commitment.
         """
         try:
-            return await self._rpc.call("blob.GetProof", (height, Namespace(namespace), Commitment(commitment)))
+            return await self._rpc.call("blob.GetProof", (height, Namespace(namespace), Commitment(commitment)),
+                                        Proof.deserializer)
         except ConnectionError as e:
             if 'blob: not found' in e.args[1].body['message'].lower():
                 return None

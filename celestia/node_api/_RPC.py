@@ -7,8 +7,11 @@ from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from dataclasses import is_dataclass, asdict
+from datetime import datetime
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
+
+from celestia.common_types import Base64
 
 RPC_VALUE_ERRORS = [
     'unmarshaling params',
@@ -23,11 +26,9 @@ RPC_VALUE_ERRORS = [
     'cannot redelegate to the same validator',
     'too many unbonding delegation entries for (delegator, validator) tuple',
     'redelegation not found for delegator address',
-    'too many redelegation entries for (delegator, src-validator, dst-validator)'
+    'too many redelegation entries for (delegator, src-validator, dst-validator)',
     'datastore: key not found'
 ]
-
-from celestia.types import Base64
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -36,6 +37,8 @@ class JSONEncoder(json.JSONEncoder):
             return asdict(obj)
         if isinstance(obj, Base64):
             return str(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         return super().default(obj)
 
 

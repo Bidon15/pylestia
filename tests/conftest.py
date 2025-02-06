@@ -7,6 +7,25 @@ from celestia.node_api import Client
 from tests.utils import start_testnet, stop_testnet, get_auth_token, get_container_id
 
 
+# @pytest_asyncio.fixture(scope='session')
+# async def clients_connection(container_ids, validator_addresses, bridge_addresses, light_address):
+#     client1 = Client(port=container_ids[0][1])
+#     cnt = 60
+#     while cnt:
+#         try:
+#             async with client1.connect(container_ids[0][0]) as api:
+#                 addresses = [*validator_addresses, *bridge_addresses, *light_address]
+#                 balances = await asyncio.gather(*[api.state.balance_for_address(address) for address in addresses])
+#                 if all(list(map(lambda balance: balance.amount != 0, balances))):
+#                     break
+#         except Exception:
+#             pass
+#         cnt -= 1
+#         await asyncio.sleep(1)
+#
+#     return client1
+
+
 @pytest.fixture(scope='session')
 def container_id():
     if container_id := get_container_id():

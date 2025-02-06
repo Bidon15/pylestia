@@ -2,9 +2,8 @@ import asyncio
 
 import pytest
 
+from celestia.common_types import Namespace, Blob
 from celestia.node_api import Client
-from celestia.node_api.blob import Blob
-from celestia.types import Namespace
 
 
 @pytest.mark.asyncio
@@ -54,9 +53,11 @@ async def test_send_blobs(auth_token):
         included = await api.blob.included(result.height, b'abc', proof, result.commitments[1])
         assert included
 
-        # com_proof = await api.blob.get_commitment_proof(result.height, b'abc', b'345')
-        # assert com_proof is not None
-        # ToDo: Figure out how to test the data type shareCommitment, blob.CommitmentProof
+        com_proof = await api.blob.get_commitment_proof(result.height, b'abc', result.commitments[1])
+        assert com_proof is not None
+
+        com_proof = await api.blob.get_commitment_proof(result.height, b'abc', result.commitments[1])
+        assert com_proof is not None
 
 
 @pytest.mark.asyncio
@@ -114,4 +115,4 @@ async def test_blob_subscribe(auth_token):
             submitter_tack.cancel()
 
     assert len(result) == 4
-    assert tuple(item.blobs[0].namespace for item in result) == (Namespace(b'qwe'), ) * 4
+    assert tuple(item.blobs[0].namespace for item in result) == (Namespace(b'qwe'),) * 4
