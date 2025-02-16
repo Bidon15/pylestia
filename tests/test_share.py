@@ -6,9 +6,10 @@ from celestia.types.share import SampleCoords
 
 
 @pytest.mark.asyncio
-async def test_share(auth_token):
-    client = Client()
-    async with client.connect(auth_token) as api:
+async def test_share(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+    async with client.connect(container['auth_token']) as api:
         result = await api.blob.submit(
             Blob(b'abc', b'0123456789'),
             Blob(b'abc', b'QWERTYUIOP'),

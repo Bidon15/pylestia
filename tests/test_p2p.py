@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import asdict
 
 import pytest
@@ -8,32 +7,19 @@ from celestia.node_api.p2p import Connectedness, Reachability
 
 
 @pytest.mark.asyncio
-async def test_p2p(container_ids):
-    container1, container2, container3 = container_ids[:3]
+async def test_p2p(clients_connection, container_ids):
+    container1, container2, container3 = container_ids['bridge']
+    client1 = Client(port=container1['port'])
+    client2 = Client(port=container2['port'])
+    client3 = Client(port=container3['port'])
 
-    client1 = Client(port=container1[1])
-    client2 = Client(port=container2[1])
-    client3 = Client(port=container3[1])
-
-    cnt = 30
-    while cnt:
-        try:
-            async with client1.connect(container1[0]) as api:
-                balance = await api.state.balance()
-                if balance.amount:
-                    break
-        except Exception:
-            pass
-        cnt -= 1
-        await asyncio.sleep(1)
-
-    async with client1.connect(container1[0]) as api:
+    async with client1.connect(container1['auth_token']) as api:
         info1 = await api.p2p.info()
 
-    async with client2.connect(container2[0]) as api:
+    async with client2.connect(container2['auth_token']) as api:
         info2 = await api.p2p.info()
 
-    async with client3.connect(container3[0]) as api:
+    async with client3.connect(container3['auth_token']) as api:
         info3 = await api.p2p.info()
 
         assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info1.id)

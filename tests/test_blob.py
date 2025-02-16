@@ -7,9 +7,10 @@ from celestia.node_api import Client
 
 
 @pytest.mark.asyncio
-async def test_send_blobs(auth_token):
-    client = Client()
-    async with client.connect(auth_token) as api:
+async def test_send_blobs(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+    async with client.connect(container['auth_token']) as api:
         blobs = await api.blob.get_all(1, b'abc')
         assert blobs is None
 
@@ -61,9 +62,10 @@ async def test_send_blobs(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_blob_exceptions(auth_token):
-    client = Client()
-    async with client.connect(auth_token) as api:
+async def test_blob_exceptions(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+    async with client.connect(container['auth_token']) as api:
         with pytest.raises(ValueError):
             await api.blob.get_all(18446744073709551615, b'abc')
         with pytest.raises(ValueError):
@@ -92,9 +94,11 @@ async def test_blob_exceptions(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_blob_subscribe(auth_token):
+async def test_blob_subscribe(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+
     result = []
-    client = Client()
 
     async def submitter(api):
         for i in range(5):
@@ -103,7 +107,7 @@ async def test_blob_subscribe(auth_token):
             else:
                 await api.blob.submit(Blob(b'qwe', f'QWERTY{i}'.encode()))
 
-    async with client.connect(auth_token) as api:
+    async with client.connect(container['auth_token']) as api:
         submitter_tack = asyncio.create_task(submitter(api))
         try:
             async with asyncio.timeout(30):
