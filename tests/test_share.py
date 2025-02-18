@@ -1,7 +1,7 @@
 import pytest
 
-from celestia.common_types import Blob
 from celestia.node_api import Client
+from celestia.types.common_types import Blob
 from celestia.types.share import SampleCoords
 
 

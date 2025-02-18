@@ -7,11 +7,10 @@ from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from dataclasses import is_dataclass, asdict
-from datetime import datetime
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 
-from celestia.common_types import Base64
+from celestia.types.common_types import Base64
 
 RPC_VALUE_ERRORS = [
     'unmarshaling params',
@@ -37,8 +36,6 @@ class JSONEncoder(json.JSONEncoder):
             return asdict(obj)
         if isinstance(obj, Base64):
             return str(obj)
-        if isinstance(obj, datetime):
-            return obj.isoformat()
         return super().default(obj)
 
 

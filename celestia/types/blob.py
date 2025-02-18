@@ -2,23 +2,43 @@ from dataclasses import dataclass
 
 from celestia._celestia import types as ext  # noqa
 
-from celestia.common_types import Blob, Base64, Namespace, Commitment
+from celestia.types.common_types import Blob, Base64, Namespace, Commitment
 
 
 @dataclass
 class SubmitBlobResult:
+    """ Represents the result of submitting a blob to the Celestia network.
+
+    Attributes:
+        height (int): The block height at which the blob was submitted.
+        commitments (tuple[Commitment, ...]): Commitments associated with the submitted blob.
+    """
     height: int
     commitments: tuple[Commitment, ...]
 
 
 @dataclass
 class SubscriptionBlobResult:
+    """ Represents the result of a subscription to blobs in the Celestia network.
+
+    Attributes:
+        height (int): The block height of the retrieved blobs.
+        blobs (tuple[Blob, ...]): The list of blobs retrieved from the subscription.
+    """
     height: int
     blobs: tuple[Blob, ...]
 
 
 @dataclass
 class Proof:
+    """ Represents a Merkle proof used for verifying data inclusion in Celestia.
+
+    Attributes:
+        end (int): The end index of the proof range.
+        nodes (tuple[Base64, ...]): The nodes forming the Merkle proof.
+        start (int | None): The start index of the proof range (optional).
+        is_max_namespace_ignored (bool | None): Flag indicating if max namespace check is ignored (optional).
+    """
     end: int
     nodes: tuple[Base64, ...]
     start: int | None
@@ -31,19 +51,35 @@ class Proof:
         self.is_max_namespace_ignored = is_max_namespace_ignored
 
     @staticmethod
-    def deserializer(result):
+    def deserializer(result) -> list['Proof']:
+        """ Deserializes a list of proof entries from a given result.
+
+        Args:
+            result (list[dict]): The serialized response data.
+
+        Returns:
+            list[Proof]: A list of deserialized Proof objects.
+        """
         if result is not None:
             return [Proof(**kwargs) for kwargs in result]
 
 
 @dataclass
 class RowProofEntry:
-    index: int
+    """ Represents an entry in a row proof, used for verifying inclusion in a specific row of a Merkle tree.
+
+    Attributes:
+        index (int | None): The index of the leaf in the row.
+        total (int): The total number of leaves in the row.
+        leaf_hash (Base64): The hash of the leaf.
+        aunts (tuple[Base64, ...]): The sibling hashes used in the proof.
+    """
+    index: int | None
     total: int
     leaf_hash: Base64
     aunts: tuple[Base64, ...]
 
-    def __init__(self, leaf_hash, aunts, total, index):
+    def __init__(self, leaf_hash, aunts, total, index=None):
         self.leaf_hash = leaf_hash
         self.aunts = tuple(aunt for aunt in aunts)
         self.total = total
@@ -52,12 +88,20 @@ class RowProofEntry:
 
 @dataclass
 class RowProof:
-    start_row: int
-    end_row: int
+    """ Represents a proof for a row in a Merkle tree.
+
+    Attributes:
+        start_row (int | None): The starting row index of the proof.
+        end_row (int | None): The ending row index of the proof.
+        row_roots (tuple[Base64, ...]): The root hashes of the rows.
+        proofs (tuple[RowProofEntry, ...]): The proof entries for the row.
+    """
+    start_row: int | None
+    end_row: int | None
     row_roots: tuple[Base64, ...]
     proofs: tuple[RowProofEntry, ...]
 
-    def __init__(self, row_roots, proofs, end_row, start_row):
+    def __init__(self, row_roots, proofs, end_row=None, start_row=None):
         self.row_roots = tuple(row_root for row_root in row_roots)
         self.proofs = tuple(RowProofEntry(**proof) for proof in proofs)
         self.end_row = end_row
@@ -66,6 +110,15 @@ class RowProof:
 
 @dataclass
 class CommitmentProof:
+    """ Represents a proof of commitment in Celestia, verifying that a namespace is correctly included.
+
+    Attributes:
+        namespace_id (Namespace): The namespace identifier.
+        namespace_version (int): The version of the namespace.
+        row_proof (RowProof): The proof for the rows containing the namespace.
+        subtree_root_proofs (tuple[Proof, ...]): Proofs for verifying subtree roots.
+        subtree_roots (tuple[Base64, ...]): The roots of the subtrees.
+    """
     namespace_id: Namespace
     namespace_version: int
     row_proof: RowProof
@@ -80,6 +133,14 @@ class CommitmentProof:
         self.subtree_roots = tuple(subtree_root for subtree_root in subtree_roots)
 
     @staticmethod
-    def deserializer(result):
+    def deserializer(result: dict) -> 'CommitmentProof':
+        """ Deserializes a commitment proof from a given result.
+
+        Args:
+            result (dict): The dictionary representation of a CommitmentProof.
+
+        Returns:
+            A deserialized CommitmentProof object.
+        """
         if result is not None:
             return CommitmentProof(**result)
