@@ -4,62 +4,48 @@ import pytest
 import pytest_asyncio
 
 from celestia.node_api import Client
-from tests.utils import start_testnet, stop_testnet, get_auth_token, get_container_id
-
-
-@pytest.fixture(scope='session')
-def container_id():
-    if container_id := get_container_id():
-        yield container_id
-    else:
-        start_testnet()
-        if container_id := get_container_id(30):
-            yield container_id
-            stop_testnet()
-        assert container_id, "Failed to start testnet"
+from tests.utils import start_testnet, stop_testnet, get_container_id
 
 
 @pytest.fixture(scope='session')
 def container_ids():
-    if containers_id := get_container_id(return_all=True):
-        containers = []
-        for container_id in containers_id:
-            containers.append((get_auth_token(container_id[0]), container_id[1]))
+    if containers := get_container_id(return_all=True):
         yield containers
     else:
         start_testnet()
-        if containers_id := get_container_id(30, return_all=True):
-            containers = []
-            for container_id in containers_id:
-                containers.append((get_auth_token(container_id[0]), container_id[1]))
+        if containers := get_container_id(30, return_all=True):
             yield containers
             stop_testnet()
-        assert containers_id, "Failed to start testnet"
+        assert containers, "Failed to start testnet"
 
 
 @pytest_asyncio.fixture(scope='session')
-async def auth_token(container_id):
-    auth_token = get_auth_token(container_id)
-    assert auth_token, "Failed to get auth token"
-    cnt = 30
-    client = Client()
+async def clients_connection(container_ids, validator_addresses, bridge_addresses, light_address):
+    client1 = Client(port=container_ids['bridge'][0]['port'])
+    cnt = 60
     while cnt:
         try:
-            async with client.connect(auth_token) as api:
-                balance = await api.state.balance()
-                if balance.amount:
+            async with client1.connect(container_ids['bridge'][0]['auth_token']) as api:
+                addresses = [*validator_addresses, *bridge_addresses, *light_address]
+                balances = await asyncio.gather(*[api.state.balance_for_address(address) for address in addresses])
+                if all(list(map(lambda balance: balance.amount != 0, balances))):
                     break
-        except Exception as exc:
+        except Exception:
             pass
         cnt -= 1
         await asyncio.sleep(1)
     assert cnt, """Cannot connect to testnet"""
-    return auth_token
+    return True
 
 
 @pytest.fixture(scope='session')
 def bridge_address():
     yield 'celestia1t52q7uqgnjfzdh3wx5m5phvma3umrq8k6tq2p9'
+
+
+@pytest.fixture(scope='session')
+def light_address():
+    yield ('celestia1ll9pjlvy8cg7ux3pr98sc96nlpwgzt48j2mjwz',)
 
 
 @pytest.fixture(scope='session')

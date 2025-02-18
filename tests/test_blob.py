@@ -3,14 +3,14 @@ import asyncio
 import pytest
 
 from celestia.node_api import Client
-from celestia.node_api.blob import Blob
-from celestia.types import Namespace
+from celestia.types.common_types import Namespace, Blob
 
 
 @pytest.mark.asyncio
-async def test_send_blobs(auth_token):
-    client = Client()
-    async with client.connect(auth_token) as api:
+async def test_send_blobs(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+    async with client.connect(container['auth_token']) as api:
         blobs = await api.blob.get_all(1, b'abc')
         assert blobs is None
 
@@ -54,15 +54,18 @@ async def test_send_blobs(auth_token):
         included = await api.blob.included(result.height, b'abc', proof, result.commitments[1])
         assert included
 
-        # com_proof = await api.blob.get_commitment_proof(result.height, b'abc', b'345')
-        # assert com_proof is not None
-        # ToDo: Figure out how to test the data type shareCommitment, blob.CommitmentProof
+        com_proof = await api.blob.get_commitment_proof(result.height, b'abc', result.commitments[1])
+        assert com_proof is not None
+
+        com_proof = await api.blob.get_commitment_proof(result.height, b'abc', result.commitments[1])
+        assert com_proof is not None
 
 
 @pytest.mark.asyncio
-async def test_blob_exceptions(auth_token):
-    client = Client()
-    async with client.connect(auth_token) as api:
+async def test_blob_exceptions(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+    async with client.connect(container['auth_token']) as api:
         with pytest.raises(ValueError):
             await api.blob.get_all(18446744073709551615, b'abc')
         with pytest.raises(ValueError):
@@ -91,9 +94,11 @@ async def test_blob_exceptions(auth_token):
 
 
 @pytest.mark.asyncio
-async def test_blob_subscribe(auth_token):
+async def test_blob_subscribe(clients_connection, container_ids):
+    container = container_ids['bridge'][0]
+    client = Client(port=container['port'])
+
     result = []
-    client = Client()
 
     async def submitter(api):
         for i in range(5):
@@ -102,7 +107,7 @@ async def test_blob_subscribe(auth_token):
             else:
                 await api.blob.submit(Blob(b'qwe', f'QWERTY{i}'.encode()))
 
-    async with client.connect(auth_token) as api:
+    async with client.connect(container['auth_token']) as api:
         submitter_tack = asyncio.create_task(submitter(api))
         try:
             async with asyncio.timeout(30):
@@ -114,4 +119,4 @@ async def test_blob_subscribe(auth_token):
             submitter_tack.cancel()
 
     assert len(result) == 4
-    assert tuple(item.blobs[0].namespace for item in result) == (Namespace(b'qwe'), ) * 4
+    assert tuple(item.blobs[0].namespace for item in result) == (Namespace(b'qwe'),) * 4

@@ -10,6 +10,8 @@ from dataclasses import is_dataclass, asdict
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 
+from celestia.types.common_types import Base64
+
 RPC_VALUE_ERRORS = [
     'unmarshaling params',
     'equal to 0',
@@ -23,10 +25,9 @@ RPC_VALUE_ERRORS = [
     'cannot redelegate to the same validator',
     'too many unbonding delegation entries for (delegator, validator) tuple',
     'redelegation not found for delegator address',
-    'too many redelegation entries for (delegator, src-validator, dst-validator)'
+    'too many redelegation entries for (delegator, src-validator, dst-validator)',
+    'datastore: key not found'
 ]
-
-from celestia.types import Base64
 
 
 class JSONEncoder(json.JSONEncoder):
