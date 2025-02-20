@@ -1,2 +1,3 @@
 ajsonrpc
 websockets
+typing_extensions

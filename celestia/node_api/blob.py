@@ -1,11 +1,11 @@
 from collections.abc import AsyncIterator
 from functools import wraps
-from typing import Callable, Unpack
+from typing import Callable
 
 from celestia._celestia import types  # noqa
 
+from celestia.types import Blob, Namespace, TxConfig, Commitment, Unpack
 from celestia.types.blob import SubmitBlobResult, Proof, CommitmentProof, SubscriptionBlobResult
-from celestia.types.common_types import Blob, Namespace, TxConfig, Commitment
 from ._RPC import Wrapper
 
 
