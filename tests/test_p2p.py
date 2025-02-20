@@ -7,19 +7,21 @@ from celestia.node_api.p2p import Connectedness, Reachability
 
 
 @pytest.mark.asyncio
-async def test_p2p(clients_connection, container_ids):
-    container1, container2, container3 = container_ids['bridge']
-    client1 = Client(port=container1['port'])
-    client2 = Client(port=container2['port'])
-    client3 = Client(port=container3['port'])
+async def test_p2p(node_provider):
+    bridge1, auth_token1 = await node_provider('bridge-0')
+    bridge2, auth_token2 = await node_provider('bridge-1')
+    bridge3, auth_token3 = await node_provider('bridge-2')
+    client1 = Client(port=bridge1.port['26658/tcp'])
+    client2 = Client(port=bridge2.port['26658/tcp'])
+    client3 = Client(port=bridge3.port['26658/tcp'])
 
-    async with client1.connect(container1['auth_token']) as api:
+    async with client1.connect(auth_token1) as api:
         info1 = await api.p2p.info()
 
-    async with client2.connect(container2['auth_token']) as api:
+    async with client2.connect(auth_token2) as api:
         info2 = await api.p2p.info()
 
-    async with client3.connect(container3['auth_token']) as api:
+    async with client3.connect(auth_token3) as api:
         info3 = await api.p2p.info()
 
         assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info1.id)
