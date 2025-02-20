@@ -1,3 +1,4 @@
 ajsonrpc
 websockets
-typing_extensions
+typing_extensions; python_version < '3.11'
+async_timeout; python_version < '3.11'

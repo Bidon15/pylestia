@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 import typing as t
 import uuid
 from asyncio import Future
@@ -11,6 +12,11 @@ from dataclasses import is_dataclass, asdict
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 
 from celestia.types.common_types import Base64
+
+if sys.version_info[:2] <= (3, 10):
+    from async_timeout import timeout as asyncio_timeout
+
+    asyncio.timeout = asyncio_timeout
 
 RPC_VALUE_ERRORS = [
     'unmarshaling params',
@@ -102,7 +108,7 @@ class RPC:
                 for id in tuple(self._pending.keys()):
                     future = self._pending.pop(id)
                     if not future.done():
-                        self._pending[id].set_exception(ConnectionError("RPC closed"))
+                        future.set_exception(ConnectionError("RPC closed"))
                 self._pending.clear()
                 # ToDo: cleanup subscription
 
