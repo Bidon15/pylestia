@@ -7,19 +7,19 @@ from celestia.node_api.blob import Blob
 
 
 @pytest.mark.asyncio
-async def test_account_address(clients_connection, container_ids, bridge_addresses):
-    container = container_ids['bridge'][0]
-    client = Client(port=container['port'])
-    async with client.connect(container['auth_token']) as api:
+async def test_account_address(node_provider, bridge_addresses):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
+    async with client.connect(auth_token) as api:
         address = await api.state.account_address()
         assert address in bridge_addresses
 
 
 @pytest.mark.asyncio
-async def test_account_balance(clients_connection, container_ids):
-    container = container_ids['bridge'][0]
-    client = Client(port=container['port'])
-    async with client.connect(container['auth_token']) as api:
+async def test_account_balance(node_provider):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
+    async with client.connect(auth_token) as api:
         balance = await api.state.balance()
         assert balance.amount > 100000000000000
         assert balance.denom == 'utia'
@@ -29,23 +29,25 @@ async def test_account_balance(clients_connection, container_ids):
 
 
 @pytest.mark.asyncio
-async def test_transfer(clients_connection, container_ids):
-    container1, container2, container3 = container_ids['bridge'][:3]
-    client1 = Client(port=container1['port'])
-    client2 = Client(port=container2['port'])
-    client3 = Client(port=container3['port'])
+async def test_transfer(node_provider):
+    bridge1, auth_token1 = await node_provider('bridge-0')
+    client1 = Client(port=bridge1.port['26658/tcp'])
+    bridge2, auth_token2 = await node_provider('bridge-1')
+    client2 = Client(port=bridge2.port['26658/tcp'])
+    bridge3, auth_token3 = await node_provider('bridge-2')
+    client3 = Client(port=bridge3.port['26658/tcp'])
 
-    async with client3.connect(container3['auth_token']) as api:
+    async with client3.connect(auth_token3) as api:
         address3 = await api.state.account_address()
         start_balance3 = await api.state.balance()
         await api.blob.submit(Blob(b'abc', b'client3'))
 
-    async with client2.connect(container2['auth_token']) as api:
+    async with client2.connect(auth_token2) as api:
         address2 = await api.state.account_address()
         start_balance2 = await api.state.balance()
         await api.blob.submit(Blob(b'abc', b'client2'))
 
-    async with client1.connect(container1['auth_token']) as api:
+    async with client1.connect(auth_token1) as api:
         start_balance1 = await api.state.balance()
         await api.blob.submit(Blob(b'abc', b'client1'))
         await asyncio.sleep(5)
@@ -70,12 +72,12 @@ async def test_transfer(clients_connection, container_ids):
 
 
 @pytest.mark.asyncio
-async def test_undelegate(clients_connection, container_ids, validator_addresses):
-    container1 = container_ids['bridge'][0]
-    client1 = Client(port=container1['port'])
+async def test_undelegate(node_provider, validator_addresses):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
     validator1 = validator_addresses[0]
     try:
-        async with client1.connect(container1['auth_token']) as api:
+        async with client.connect(auth_token) as api:
             await api.blob.submit(Blob(b'abc', b'client3'))
 
             try:
@@ -112,12 +114,12 @@ async def test_undelegate(clients_connection, container_ids, validator_addresses
 
 
 @pytest.mark.asyncio
-async def test_delegating(clients_connection, container_ids, validator_addresses):
-    container1 = container_ids['bridge'][0]
-    client1 = Client(port=container1['port'])
+async def test_delegating(node_provider, validator_addresses):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
     validator1, validator2, validator3 = validator_addresses
     try:
-        async with client1.connect(container1['auth_token']) as api:
+        async with client.connect(auth_token) as api:
             await api.blob.submit(Blob(b'abc', b'client3'))
 
             try:

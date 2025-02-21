@@ -1,8 +1,8 @@
-from typing import Callable, Unpack
+from typing import Callable
 
 from celestia._celestia import types  # noqa
 
-from celestia.types.common_types import TxConfig, Blob
+from celestia.types import TxConfig, Blob, Unpack
 from celestia.types.state import Balance, TXResponse, QueryUnbondingDelegationResponse, \
     QueryDelegationResponse, QueryRedelegationResponse
 from ._RPC import Wrapper

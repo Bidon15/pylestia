@@ -1,46 +1,63 @@
 import asyncio
+from time import sleep
 
 import pytest
-import pytest_asyncio
 
 from celestia.node_api import Client
-from tests.utils import start_testnet, stop_testnet, get_container_id
+from tests.docker import Containers
+from tests.utils import start_testnet, stop_testnet, get_auth_token
 
 
-@pytest.fixture(scope='session')
-def container_ids():
-    if containers := get_container_id(return_all=True):
-        yield containers
-    else:
-        start_testnet()
-        if containers := get_container_id(30, return_all=True):
-            yield containers
-            stop_testnet()
-        assert containers, "Failed to start testnet"
-
-
-@pytest_asyncio.fixture(scope='session')
-async def clients_connection(container_ids, validator_addresses, bridge_addresses, light_address):
-    client1 = Client(port=container_ids['bridge'][0]['port'])
-    cnt = 60
+@pytest.fixture(scope="session")
+def containers():
+    cnt = 10
+    need_shutdown = False
+    containers = Containers('testnet')
     while cnt:
-        try:
-            async with client1.connect(container_ids['bridge'][0]['auth_token']) as api:
-                addresses = [*validator_addresses, *bridge_addresses, *light_address]
-                balances = await asyncio.gather(*[api.state.balance_for_address(address) for address in addresses])
-                if all(list(map(lambda balance: balance.amount != 0, balances))):
-                    break
-        except Exception:
-            pass
+        if containers:
+            break
+        if not need_shutdown:
+            start_testnet()
+            need_shutdown = True
         cnt -= 1
-        await asyncio.sleep(1)
-    assert cnt, """Cannot connect to testnet"""
-    return True
+        sleep(10 - cnt)
+        containers = Containers('testnet')
+    else:
+        RuntimeError("Cannot start testnet")
+    yield containers
+    if need_shutdown:
+        stop_testnet()
 
+@pytest.fixture(scope="session")
+def ready_nodes():
+    yield dict()
 
-@pytest.fixture(scope='session')
-def bridge_address():
-    yield 'celestia1t52q7uqgnjfzdh3wx5m5phvma3umrq8k6tq2p9'
+@pytest.fixture
+def node_provider(containers, ready_nodes):
+    #
+    async def node_provider_(name):
+        if name in ready_nodes:
+            return ready_nodes[name]
+        elif node := containers.get_by_name_first(name):
+            auth_token = get_auth_token(node)
+            cnt = 10
+            while cnt:
+                try:
+                    async with Client(port=node.port['26658/tcp']).connect(auth_token) as api:
+                        balance = await api.state.balance()
+                        if balance.amount:
+                            ready_nodes[name] = node, auth_token
+                            return ready_nodes[name]
+                except:
+                    pass
+                cnt -= 1
+                await asyncio.sleep(10 - cnt)
+            else:
+                raise RuntimeError(f"Node '{name}' not ready")
+        else:
+            raise RuntimeError(f"Node '{name}' not found")
+
+    return lambda name: node_provider_(name)
 
 
 @pytest.fixture(scope='session')

@@ -7,10 +7,10 @@ from celestia.types.common_types import Namespace, Blob
 
 
 @pytest.mark.asyncio
-async def test_send_blobs(clients_connection, container_ids):
-    container = container_ids['bridge'][0]
-    client = Client(port=container['port'])
-    async with client.connect(container['auth_token']) as api:
+async def test_send_blobs(node_provider):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
+    async with client.connect(auth_token) as api:
         blobs = await api.blob.get_all(1, b'abc')
         assert blobs is None
 
@@ -62,10 +62,10 @@ async def test_send_blobs(clients_connection, container_ids):
 
 
 @pytest.mark.asyncio
-async def test_blob_exceptions(clients_connection, container_ids):
-    container = container_ids['bridge'][0]
-    client = Client(port=container['port'])
-    async with client.connect(container['auth_token']) as api:
+async def test_blob_exceptions(node_provider):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
+    async with client.connect(auth_token) as api:
         with pytest.raises(ValueError):
             await api.blob.get_all(18446744073709551615, b'abc')
         with pytest.raises(ValueError):
@@ -94,9 +94,9 @@ async def test_blob_exceptions(clients_connection, container_ids):
 
 
 @pytest.mark.asyncio
-async def test_blob_subscribe(clients_connection, container_ids):
-    container = container_ids['bridge'][0]
-    client = Client(port=container['port'])
+async def test_blob_subscribe(node_provider):
+    bridge, auth_token = await node_provider('bridge-0')
+    client = Client(port=bridge.port['26658/tcp'])
 
     result = []
 
@@ -107,7 +107,7 @@ async def test_blob_subscribe(clients_connection, container_ids):
             else:
                 await api.blob.submit(Blob(b'qwe', f'QWERTY{i}'.encode()))
 
-    async with client.connect(container['auth_token']) as api:
+    async with client.connect(auth_token) as api:
         submitter_tack = asyncio.create_task(submitter(api))
         try:
             async with asyncio.timeout(30):

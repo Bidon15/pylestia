@@ -4,9 +4,10 @@ from celestia.node_api import Client
 
 
 @pytest.mark.asyncio
-async def test_das(clients_connection, container_ids):
-    light_client = Client(port=container_ids['light'][0]['port'])
+async def test_das(node_provider):
+    light, auth_token = await node_provider('light-0')
+    client = Client(port=light.port['26658/tcp'])
 
-    async with light_client.connect(container_ids['light'][0]['auth_token']) as api:
+    async with client.connect(auth_token) as api:
         await api.das.wait_catch_up()
         assert (await api.das.sampling_stats()).catch_up_done

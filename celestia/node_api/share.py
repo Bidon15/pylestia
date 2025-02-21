@@ -1,6 +1,6 @@
 from typing import Callable
 
-from celestia.types.common_types import Namespace, Base64
+from celestia.types import Namespace, Base64
 from celestia.types.header import ExtendedHeader
 from celestia.types.share import ExtendedDataSquare, NamespaceData, SampleCoords, GetRangeResult
 from ._RPC import Wrapper
