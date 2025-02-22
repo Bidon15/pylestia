@@ -24,6 +24,8 @@ async def test_p2p(node_provider):
     async with client3.connect(auth_token3) as api:
         info3 = await api.p2p.info()
 
+        assert info1.id != info2.id != info3.id
+
         assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info1.id)
         assert Connectedness.CONNECTED.value == await api.p2p.connectedness(info2.id)
 

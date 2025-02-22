@@ -3,7 +3,7 @@ from typing import Callable
 from celestia.types import Namespace
 from celestia.types.header import ExtendedHeader
 from celestia.types.share import ExtendedDataSquare, NamespaceData, SampleCoords, GetRangeResult
-from ._RPC import Wrapper
+from celestia.node_api.rpc.abc import Wrapper
 
 
 class ShareClient(Wrapper):

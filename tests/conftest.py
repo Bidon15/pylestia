@@ -42,16 +42,18 @@ def node_provider(containers, ready_nodes):
             auth_token = get_auth_token(node)
             cnt = 10
             while cnt:
+                cnt -= 1
                 try:
                     async with Client(port=node.port['26658/tcp']).connect(auth_token) as api:
                         balance = await api.state.balance()
                         if balance.amount:
                             ready_nodes[name] = node, auth_token
                             return ready_nodes[name]
-                except:
-                    pass
-                cnt -= 1
-                await asyncio.sleep(10 - cnt)
+                except Exception as exc:
+                    if not cnt:
+                        raise exc
+                if cnt:
+                    await asyncio.sleep(10 - cnt)
             else:
                 raise RuntimeError(f"Node '{name}' not ready")
         else:

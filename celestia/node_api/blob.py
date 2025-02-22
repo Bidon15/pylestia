@@ -6,7 +6,7 @@ from celestia._celestia import types  # noqa
 
 from celestia.types import Blob, Namespace, TxConfig, Commitment, Unpack
 from celestia.types.blob import SubmitBlobResult, Proof, CommitmentProof, SubscriptionBlobResult
-from ._RPC import Wrapper
+from celestia.node_api.rpc.abc import Wrapper
 
 
 def handle_blob_error(func):

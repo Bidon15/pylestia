@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 
-from ._RPC import Wrapper
+from celestia.node_api.rpc.abc import Wrapper
 
 
 class FraudClient(Wrapper):
