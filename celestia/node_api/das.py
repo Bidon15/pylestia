@@ -1,7 +1,7 @@
 from typing import Callable
 
 from celestia.types.das import SamplingStats
-from ._RPC import Wrapper
+from celestia.node_api.rpc.abc import Wrapper
 
 
 class DasClient(Wrapper):

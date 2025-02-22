@@ -33,6 +33,15 @@ path = "Cargo.toml"
 binding = "PyO3"
 debug = false
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+    "integration",
+]
+
 
 [tool.setuptools_scm]
 

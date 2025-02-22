@@ -1,7 +1,7 @@
 from typing import Callable
 
 from celestia.types.p2p import BandwidthStats, Connectedness, AddrInfo, Reachability, ResourceManagerStat
-from ._RPC import Wrapper
+from celestia.node_api.rpc.abc import Wrapper
 
 
 class P2PClient(Wrapper):
