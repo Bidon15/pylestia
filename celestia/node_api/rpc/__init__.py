@@ -44,17 +44,21 @@ class Client:
 
         @asynccontextmanager
         async def connect_context():
-            async with connect(url, additional_headers=headers) as connection:
-                class Transport(AbcTransport):
+            try:
+                listener_task = None
+                async with connect(url, additional_headers=headers) as connection:
+                    class Transport(AbcTransport):
 
-                    async def send(self, message: str):
-                        await connection.send(message)
+                        async def send(self, message: str):
+                            await connection.send(message)
 
-                transport = Transport()
-                rpc = RPC(transport, response_timeout)
-                self._listener_task = asyncio.create_task(listener(connection, transport))
-                yield rpc
-                self._listener_task.cancel()
-                await self._listener_task
+                    transport = Transport()
+                    rpc = RPC(transport, response_timeout)
+                    listener_task = asyncio.create_task(listener(connection, transport))
+                    yield rpc
+            finally:
+                if listener_task and not listener_task.done():
+                    listener_task.cancel()
+                    await listener_task
 
         return connect_context()

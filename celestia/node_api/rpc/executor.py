@@ -126,4 +126,4 @@ class RPC(RPCExecutor):
                 else:
                     await asyncio.sleep(0.1)
         finally:
-            del self._subscriptions[subscription_id]
+            self._subscriptions.pop(subscription_id, None)
