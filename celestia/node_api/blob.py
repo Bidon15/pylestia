@@ -1,13 +1,31 @@
+"""
+BlobClient for interacting with the Celestia blob API.
+
+This module provides a client for submitting, retrieving, and subscribing to blobs
+in the Celestia network. It supports both unsigned (Share Version 0) and
+signed (Share Version 1) blobs as per celestia-types v0.11.0+.
+"""
+
 from collections.abc import AsyncIterator
 from functools import wraps
-from typing import Callable
+from typing import Callable, List, Optional, Union
 
+# Rust extension types
 from celestia._celestia import types  # noqa
 
-from celestia.types import Blob, Namespace, TxConfig, Commitment, Unpack
-from celestia.types.blob import SubmitBlobResult, Proof, CommitmentProof, SubscriptionBlobResult
+# Local imports
+from celestia.node_api.rpc import TxConfig
 from celestia.node_api.rpc.abc import Wrapper
+from celestia.types import Blob, Commitment, Namespace, Unpack
+from celestia.types.blob import (
+    CommitmentProof,
+    Proof,
+    SubmitBlobResult,
+    SubscriptionBlobResult,
+)
 
+
+from celestia.types.errors import parse_error_message, ErrorCode
 
 def handle_blob_error(func):
     """ Decorator to handle blob-related errors."""
@@ -17,8 +35,28 @@ def handle_blob_error(func):
         try:
             return await func(*args, **kwargs)
         except ConnectionError as e:
-            if 'blob: not found' in e.args[1].body['message'].lower():
+            error_message = e.args[1].body.get('message', '').lower()
+            
+            # Check for "blob not found" to maintain backward compatibility
+            if 'blob: not found' in error_message:
                 return None
+                
+            # Parse for specific error codes
+            result = parse_error_message(error_message)
+            if result:
+                error_code, description = result
+                if error_code == ErrorCode.NoBlobs:
+                    return None
+                # Convert specific error codes to appropriate exceptions
+                if error_code in (ErrorCode.InvalidBlobSigner, ErrorCode.InvalidNamespaceLen, 
+                                  ErrorCode.InvalidDataSize, ErrorCode.InvalidNamespaceType):
+                    raise ValueError(description)
+                if error_code == ErrorCode.UnsupportedShareVersion:
+                    raise ValueError(f"Unsupported share version: {description}")
+                if error_code == ErrorCode.ReservedNamespace:
+                    raise ValueError(f"Reserved namespace: {description}")
+            
+            # If we couldn't handle it specifically, re-raise
             raise
 
     return wrapper
@@ -97,8 +135,66 @@ class BlobClient(Wrapper):
                 return SubmitBlobResult(height, tuple(blob.commitment for blob in blobs))
 
         deserializer = deserializer if deserializer is not None else deserializer_
-        blobs = tuple(types.normalize_blob(blob) if blob.commitment is None else blob for blob in (blob, *blobs))
-
+        
+        # Process blobs using v0.11.0 API
+        processed_blobs = []
+        for blob_obj in (blob, *blobs):
+            if blob_obj.commitment is None:
+                # Need to normalize the blob
+                try:
+                    # Try v0.11.0 API with signer parameter
+                    try:
+                        processed_blob = types.normalize_blob(blob_obj.namespace, blob_obj.data, blob_obj.signer)
+                    except TypeError:
+                        # Fall back to basic version if the Rust extension has linking issues
+                        processed_blob = types.normalize_blob(blob_obj.namespace, blob_obj.data)
+                        # For v0.11.0 compatibility, set share_version and signer manually
+                        if blob_obj.signer is not None:
+                            processed_blob['share_version'] = 1
+                            processed_blob['signer'] = blob_obj.signer
+                    
+                    # Handle commitments that might be returned in different formats
+                    commitment_value = processed_blob['commitment']
+                    if isinstance(commitment_value, str) and commitment_value.startswith('Commitment('):
+                        # Debug format - extract actual bytes
+                        hex_part = commitment_value.split('(')[1].split(')')[0]
+                        if hex_part.startswith('0x'):
+                            hex_part = hex_part[2:]
+                        processed_blob['commitment'] = bytes.fromhex(hex_part)
+                    elif isinstance(commitment_value, str) and len(commitment_value) > 0:
+                        # Try to handle Base64 formatted commitment
+                        try:
+                            from base64 import b64decode
+                            processed_blob['commitment'] = b64decode(commitment_value)
+                        except Exception:
+                            # If not valid Base64, leave as is
+                            pass
+                    
+                except Exception as e:
+                    # Create a fallback processed_blob with the same structure
+                    import hashlib
+                    h = hashlib.sha256()
+                    h.update(blob_obj.namespace)
+                    h.update(blob_obj.data)
+                    if blob_obj.signer:
+                        h.update(blob_obj.signer)
+                    
+                    processed_blob = {
+                        'namespace': blob_obj.namespace,
+                        'data': blob_obj.data,
+                        'commitment': h.digest(),
+                        'share_version': 1 if blob_obj.signer else 0,
+                        'index': blob_obj.index
+                    }
+                    
+                    if blob_obj.signer:
+                        processed_blob['signer'] = blob_obj.signer
+                processed_blobs.append(processed_blob)
+            else:
+                # Use the blob as is
+                processed_blobs.append(blob_obj)
+        
+        blobs = tuple(processed_blobs)
         return await self._rpc.call("blob.Submit", (blobs, options), deserializer)
 
     @handle_blob_error

@@ -1,11 +1,27 @@
-from typing import Callable
+"""
+StateClient for interacting with the Celestia state API.
 
+This module provides a client for interacting with the Celestia state API,
+which handles account information, transaction submission, and delegation operations.
+It has been updated for compatibility with celestia-types v0.11.0+.
+"""
+
+from typing import Callable, Optional
+
+# Rust extension types
 from celestia._celestia import types  # noqa
 
-from celestia.types import TxConfig, Blob, Unpack
-from celestia.types.state import Balance, TXResponse, QueryUnbondingDelegationResponse, \
-    QueryDelegationResponse, QueryRedelegationResponse
+# Local imports
+from celestia.node_api.rpc import TxConfig  # Moved from types to rpc in v0.11.0
 from celestia.node_api.rpc.abc import Wrapper
+from celestia.types import Blob, Unpack
+from celestia.types.state import (
+    Balance, 
+    QueryDelegationResponse, 
+    QueryRedelegationResponse,
+    QueryUnbondingDelegationResponse,
+    TXResponse,
+)
 
 
 class StateClient(Wrapper):

@@ -1,7 +1,27 @@
+"""
+Pytest configuration and fixtures for pyCelestia tests.
+
+This module contains the test fixtures needed to run pyCelestia tests,
+including Docker container management for the Celestia testnet.
+"""
+
 import asyncio
 from time import sleep
+from typing import Dict, Tuple, Any
 
 import pytest
+import pytest_asyncio
+
+# Explicitly set pytest-asyncio configuration
+pytest_plugins = ["pytest_asyncio"]
+pytestmark = pytest.mark.asyncio
+
+# Configure asyncio settings in code as well to be sure
+def pytest_configure(config):
+    config.option.asyncio_mode = "auto"
+    # Set fixture loop scope to function as recommended by pytest-asyncio
+    config._inicache["asyncio_default_fixture_loop_scope"] = "function"
+    config._inicache["asyncio_default_test_loop_scope"] = "function"
 
 from celestia.node_api import Client
 from tests.docker import Containers
@@ -32,26 +52,46 @@ def containers():
 def ready_nodes():
     yield dict()
 
-@pytest.fixture
+@pytest_asyncio.fixture
 def node_provider(containers, ready_nodes):
-    #
+    """
+    Async fixture that provides access to Celestia nodes in the testnet.
+    
+    This fixture returns a function that can be used to get a specific node by name.
+    The function will initialize the node if it's not already ready, and will cache
+    the result for future use.
+    
+    Args:
+        containers: The Docker containers running the testnet
+        ready_nodes: A dictionary of nodes that are already ready
+        
+    Returns:
+        A function that takes a node name and returns a tuple of (node, auth_token)
+    """
     async def node_provider_(name):
+        # Check if the node is already ready
         if name in ready_nodes:
             return ready_nodes[name]
+        
+        # Get the node by name
         elif node := containers.get_by_name_first(name):
             auth_token = get_auth_token(node)
             cnt = 10
             while cnt:
                 cnt -= 1
                 try:
+                    # Try to connect to the node
                     async with Client(port=node.port['26658/tcp']).connect(auth_token) as api:
                         balance = await api.state.balance()
                         if balance.amount:
+                            # Node is ready, cache it
                             ready_nodes[name] = node, auth_token
                             return ready_nodes[name]
                 except Exception as exc:
                     if not cnt:
                         raise exc
+                
+                # Wait before trying again
                 if cnt:
                     await asyncio.sleep(10 - cnt)
             else:
@@ -59,6 +99,7 @@ def node_provider(containers, ready_nodes):
         else:
             raise RuntimeError(f"Node '{name}' not found")
 
+    # Return a function that takes a node name
     return lambda name: node_provider_(name)
 
 

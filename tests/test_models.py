@@ -1,7 +1,15 @@
+"""
+Tests for the core data types in the Celestia client.
+
+These tests verify the basic functionality of Namespace, Blob, and other
+core data types without requiring a running Celestia node.
+"""
+
 import pytest
+import pytest_asyncio
 from celestia._celestia import types  # noqa
 
-from celestia.types.common_types import Namespace
+from celestia.types import Namespace
 
 
 @pytest.mark.asyncio
@@ -19,8 +27,12 @@ async def test_namespace():
 @pytest.mark.asyncio
 async def test_blob():
     blob = types.normalize_blob(b'Alesh', b'0123456789ABCDEF')
-    assert blob == {
-        'namespace': b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00Alesh',
-        'commitment': b'\x88e\rh\xc1\x02\xbd\xfc\xbcc\xa3\xcc\x10\n5\xdf\xcbCh\xa3m\x04\xe1\xeds(\xdf}j>\xab/',
-        'data': b'0123456789ABCDEF', 'index': None, 'share_version': 0
-    }
+    # Verify all blob properties thoroughly
+    assert blob['namespace'] == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00Alesh'
+    assert blob['data'] == b'0123456789ABCDEF'
+    assert blob['index'] is None
+    assert blob['share_version'] == 0
+    # In v0.11.0, commitment is still bytes but extracted differently
+    # Verify the commitment hash matches the expected value
+    assert isinstance(blob['commitment'], bytes)
+    assert blob['commitment'] == b'\x88e\rh\xc1\x02\xbd\xfc\xbcc\xa3\xcc\x10\n5\xdf\xcbCh\xa3m\x04\xe1\xeds(\xdf}j>\xab/'

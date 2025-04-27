@@ -21,6 +21,8 @@ class ShareProof:
     """ A class representing a share proof, which consists of a namespace ID,
     namespace version, row proof, data, and share proofs.
 
+    All fields are now publicly accessible as per v0.10.0 changes.
+
     Attributes:
         namespace_id (Namespace): The namespace identifier.
         namespace_version (int): The version of the namespace.
@@ -35,7 +37,7 @@ class ShareProof:
     share_proofs: tuple[Proof, ...]
 
     def __init__(self, namespace_id: Namespace, namespace_version: int,
-                 row_proof: dict, data: tuple[Base64, ...],
+                 row_proof: dict, data: tuple[Base64, ...] | list[Base64],
                  share_proofs: list[dict]):
         self.namespace_id = Namespace.ensure_type(namespace_id)
         self.namespace_version = int(namespace_version)

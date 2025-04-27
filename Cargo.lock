@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "_celestia"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "celestia-types",
  "pyo3",
@@ -327,9 +327,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-proto"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c71c3cf9caaf35a7530ea5ac2bab226c9e5c1bad3d661d3527a3951d6f80cbcc"
+checksum = "4429b21a37997c08390d6f8fc325d29b8e72f3dca39f7acfe48d639e2f82a553"
 dependencies = [
  "bytes",
  "prost",
@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-types"
-version = "0.9.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a70717cd176178cb3feb43795dd40a6a29ad5e48fae4222d8ba45182b93acbae"
+checksum = "179b49de517003a5aa2a80f9976b866207586175b164f6c79ae9c0115d134e2e"
 dependencies = [
  "base64",
  "bech32",

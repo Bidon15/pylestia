@@ -1,48 +1,76 @@
-[build-system]
-requires = ["setuptools", "setuptools-scm", "setuptools-rust"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "pyCelestia"
+[tool.poetry]
+name = "pylestia"
+version = "0.2.0"
 description = "The Python client for working with the Celestia blockchain platform."
+authors = [
+    "Alex Poryadin <alexey.poryadin@gmail.com>",
+    "Viet Nguyen <viet@celestia.org>",
+]
 readme = "README.md"
-license = { text = "MIT License" }
-requires-python = ">= 3.10"
-dynamic = ["version", "dependencies", "optional-dependencies"]
+license = "MIT"
+repository = "https://github.com/Bidon15/pylestia"
+packages = [{ include = "celestia" }]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Rust",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-[project.urls]
-Homepage = "https://github.com/Alesh/pyCelestia"
-Issues = "https://github.com/Alesh/pyCelestia"
+[tool.poetry.dependencies]
+python = ">=3.10"
+ajsonrpc = "*"
+websockets = "*"
+typing-extensions = "*"
+async-timeout = "*"
 
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0.0"
+pytest-asyncio = ">=0.26.0"
+black = ">=23.0.0"
+isort = ">=5.12.0"
+mypy = ">=1.0.0"
+ruff = ">=0.0.292"
 
-[tool.setuptools.packages.find]
-include = ["celestia*"]
+[tool.poetry.extras]
+validation = ["pydantic"]
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
-optional-dependencies.test = { file = ["tests/requirements.txt"] }
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=7.0.0"
+sphinx-rtd-theme = ">=1.0.0"
 
-[[tool.setuptools-rust.ext-modules]]
-target = "celestia._celestia"
-path = "Cargo.toml"
-binding = "PyO3"
-debug = false
+[build-system]
+requires = ["poetry-core>=1.0.0", "maturin>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.maturin]
+python-source = "."
+module-name = "celestia._celestia"
+features = ["pyo3/extension-module"]
+bindings = "pyo3"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = [
-    "tests",
-    "integration",
-]
+testpaths = ["tests", "integration"]
 
+[tool.black]
+line-length = 100
+target-version = ["py310"]
 
-[tool.setuptools_scm]
+[tool.isort]
+profile = "black"
+line_length = 100
 
-[project.scripts]
+[tool.ruff]
+line-length = 100
+target-version = "py310"

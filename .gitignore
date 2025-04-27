@@ -27,6 +27,11 @@ venv/
 .installed.cfg
 *.egg
 
+# Poetry
+poetry.toml
+.poetry/
+poetry.lock
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -71,7 +76,10 @@ docs/_build/
 
 # setuptools-rust
 target/
+.cargo/
 
+# Simple test files
+test_simple.py
 
+# Version file
 __version__.py
-celestia/__init__.py

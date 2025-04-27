@@ -13,12 +13,31 @@ from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 from celestia.types import Base64
 from .abc import RPCExecutor, Transport, logger
 
+class TxConfig(t.TypedDict):
+    """ Represents a transaction configuration for submitting transactions to Celestia.
+
+    Attributes:
+        signer_address (str | None): The address of the transaction signer.
+        is_gas_price_set (bool | None): Whether a custom gas price is set.
+        key_name (str | None): The name of the key used for signing.
+        gas_price (float | None): The gas price for the transaction.
+        gas (int | None): The amount of gas to use.
+        fee_granter_address (str | None): Address of the fee granter (if applicable).
+    """
+    signer_address: str | None
+    is_gas_price_set: bool | None
+    key_name: str | None
+    gas_price: float | None
+    gas: int | None
+    fee_granter_address: str | None
+
 if sys.version_info[:2] <= (3, 10):
     from async_timeout import timeout as asyncio_timeout
 
     asyncio.timeout = asyncio_timeout
 
 RPC_VALUE_ERRORS = [
+    # Original errors
     'unmarshaling params',
     'equal to 0',
     'given height is from the future',
@@ -32,7 +51,17 @@ RPC_VALUE_ERRORS = [
     'too many unbonding delegation entries for (delegator, validator) tuple',
     'redelegation not found for delegator address',
     'too many redelegation entries for (delegator, src-validator, dst-validator)',
-    'datastore: key not found'
+    'datastore: key not found',
+    # New error codes added in v0.10.0 and v0.11.0
+    'reserved namespace',
+    'invalid namespace length',
+    'invalid data size',
+    'blob size mismatch',
+    'unsupported share version',
+    'zero blob size',
+    'no blobs',
+    'invalid blob signer',
+    'invalid namespace type',
 ]
 
 

@@ -2,10 +2,13 @@ import asyncio
 from contextlib import asynccontextmanager, AbstractAsyncContextManager
 from urllib.parse import urlparse
 
-from websockets.asyncio.client import connect, ClientConnection
+from websockets import connect
+# In websockets 12.0, the connection types have changed
+# Use Protocol instead of ClientConnection/Connection
+from websockets.protocol import Protocol as ClientConnection
 
 from .abc import Transport as AbcTransport
-from .executor import RPC
+from .executor import RPC, TxConfig
 
 
 class Client:
