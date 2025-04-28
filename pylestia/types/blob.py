@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from celestia._celestia import types as ext  # noqa
+from pylestia.pylestia_core import types as ext  # noqa
 
-from celestia.types.common_types import Blob, Base64, Namespace, Commitment
+from pylestia.types.common_types import Blob, Base64, Namespace, Commitment
 
 
 @dataclass

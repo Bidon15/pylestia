@@ -1,9 +1,9 @@
 from typing import Callable
 
-from celestia.types import Namespace
-from celestia.types.header import ExtendedHeader
-from celestia.types.share import ExtendedDataSquare, NamespaceData, SampleCoords, GetRangeResult
-from celestia.node_api.rpc.abc import Wrapper
+from pylestia.types import Namespace
+from pylestia.types.header import ExtendedHeader
+from pylestia.types.share import ExtendedDataSquare, NamespaceData, SampleCoords, GetRangeResult
+from pylestia.node_api.rpc.abc import Wrapper
 
 
 class ShareClient(Wrapper):
@@ -14,7 +14,7 @@ class ShareClient(Wrapper):
 
         Args:
             height (int): The block height.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.share.ExtendedDataSquare.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.share.ExtendedDataSquare.deserializer`.
 
         Returns:
             ExtendedDataSquare: The retrieved EDS object.
@@ -56,7 +56,7 @@ class ShareClient(Wrapper):
             height (int): The block height.
             start (int): The starting index.
             end (int): The ending index.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.share.GetRangeResult.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.share.GetRangeResult.deserializer`.
 
         Returns:
             GetRangeResult: The retrieved range result containing shares and proof.

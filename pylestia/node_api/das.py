@@ -1,7 +1,7 @@
 from typing import Callable
 
-from celestia.types.das import SamplingStats
-from celestia.node_api.rpc.abc import Wrapper
+from pylestia.types.das import SamplingStats
+from pylestia.node_api.rpc.abc import Wrapper
 
 
 class DasClient(Wrapper):
@@ -11,7 +11,7 @@ class DasClient(Wrapper):
         """ Returns the current statistics over the DA sampling process.
 
         Args:
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.das.SamplingStats.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.das.SamplingStats.deserializer`.
 
         Returns:
             SamplingStats: The current sampling statistics.

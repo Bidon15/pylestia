@@ -10,10 +10,16 @@ Main components:
 - Types: Core data structures for working with Celestia
 - Node API: Access to all Celestia node APIs
 
-For more information, visit: https://github.com/Alesh/pylestia
+For more information, visit: https://github.com/Bidon15/pylestia
 """
 
-__version__ = "0.1.7"
+__version__ = "0.2.1"
 
-# Provide API classes at package level
-from celestia.node_api import Client
+# Import directly from pylestia's modules
+from pylestia.node_api import Client
+
+# Re-export common types at package level for convenience
+from pylestia.types import Namespace, Blob
+
+# Make node_api module available at package level
+from pylestia import node_api

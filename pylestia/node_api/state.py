@@ -9,13 +9,13 @@ It has been updated for compatibility with celestia-types v0.11.0+.
 from typing import Callable, Optional
 
 # Rust extension types
-from celestia._celestia import types  # noqa
+from pylestia.pylestia_core import types  # noqa
 
 # Local imports
-from celestia.node_api.rpc import TxConfig  # Moved from types to rpc in v0.11.0
-from celestia.node_api.rpc.abc import Wrapper
-from celestia.types import Blob, Unpack
-from celestia.types.state import (
+from pylestia.node_api.rpc import TxConfig  # Moved from types to rpc in v0.11.0
+from pylestia.node_api.rpc.abc import Wrapper
+from pylestia.types import Blob, Unpack
+from pylestia.types.state import (
     Balance, 
     QueryDelegationResponse, 
     QueryRedelegationResponse,

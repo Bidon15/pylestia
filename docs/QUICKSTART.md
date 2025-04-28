@@ -1,26 +1,27 @@
-# py-celestia Quick Start Guide
+# pylestia Quick Start Guide
 
-This guide will help you get started with py-celestia, a Python client for interacting with the Celestia network.
+This guide will help you get started with pylestia, a Python client for interacting with the Celestia network.
 
 ## Prerequisites
 
-- Python 3.10 or higher
+Before you begin, make sure you have:
+
 - A running Celestia node (light node or bridge node)
-- A funded wallet associated with your node
+- Python 3.10 or higher installed
 
 ## Installation
 
-Install py-celestia using pip:
+Install pylestia using pip:
 
 ```bash
-pip install pycelestia
+pip install pylestia
 ```
 
-Or directly from the repository:
+Or install from source:
 
 ```bash
-git clone https://github.com/your-org/py-celestia.git
-cd py-celestia
+git clone https://github.com/Bidon15/pylestia.git
+cd pylestia
 pip install -e .
 ```
 
@@ -28,30 +29,29 @@ pip install -e .
 
 If you don't have a Celestia node running yet, follow the [official Celestia documentation](https://docs.celestia.org/nodes/light-node) to set up a light node.
 
-Quick steps to run a local light node:
+Here's a quick setup for a light node on the Mocha testnet:
 
 ```bash
 # Install celestia-node
 curl -sSL https://install.celestia.org | bash
 
-# Initialize the light node
+# Initialize a light node
 celestia light init
 
-# Start the light node (replace network_version with the current version)
+# Start the light node
 celestia light start --core.ip rpc-mocha.pops.one --p2p.network mocha
 ```
 
-### Getting Your Authentication Token
+## Getting Your Authentication Token
 
-Once your node is running, you'll need the authentication token:
+After starting your node, get your authentication token:
 
 ```bash
-# Get the auth token from your node
 AUTH_TOKEN=$(celestia light auth admin)
 echo $AUTH_TOKEN
 ```
 
-Save this token for use with py-celestia.
+Save this token for use with pylestia.
 
 ## Basic Usage
 
@@ -59,201 +59,145 @@ Here's a simple example of how to connect to a Celestia node and check your wall
 
 ```python
 import asyncio
-from celestia.node_api import Client
+from pylestia import Client
 
-async def get_balance():
+async def main():
     # Connect to a local Celestia node
-    client = Client(url="ws://localhost:26658")
-    
-    # Replace with your authentication token
-    auth_token = "your_auth_token_here"
-    
-    async with client.connect(auth_token) as api:
-        # Check your wallet balance
-        balance = await api.state.balance()
-        print(f"Wallet balance: {balance}")
-        
-        # Get node information
-        node_info = await api.p2p.info()
-        print(f"Node ID: {node_info.get('ID')}")
+    client = Client("http://localhost:26658")
 
-if __name__ == "__main__":
-    asyncio.run(get_balance())
+    # Use your authentication token
+    async with client.connect("your_auth_token_here") as api:
+        # Get account information
+        address = await api.state.account_address()
+        print(f"Account address: {address}")
+
+        # Check balance
+        balance = await api.state.balance()
+        print(f"Balance: {balance.amount} {balance.denom}")
+
+# Run the async function
+asyncio.run(main())
 ```
 
-## Submitting a Blob
+## Submitting Data
 
 Submitting data to Celestia is done through blobs. Here's how to submit a "Hello, World!" blob:
 
 ```python
 import asyncio
 import secrets
-from celestia.node_api import Client
-from celestia.types.common_types import Namespace, Blob
 
-async def submit_hello_world():
-    client = Client(url="ws://localhost:26658")
-    auth_token = "your_auth_token_here"
-    
-    # Generate a random namespace
-    namespace = Namespace(secrets.token_bytes(8))
-    
-    # Create a blob with your data
-    data = b"Hello, World!"
-    blob = Blob(namespace, data)
-    
-    async with client.connect(auth_token) as api:
+from pylestia import Client
+from pylestia.types import Namespace, Blob
+
+async def submit_blob():
+    client = Client("http://localhost:26658")
+
+    # Connect to the node
+    async with client.connect("your_auth_token_here") as api:
+        # Create a random namespace (8 bytes)
+        random_namespace = secrets.token_bytes(8)
+        namespace = Namespace(random_namespace)
+
+        # Create your blob
+        blob_data = b"Hello, World!"
+        blob = Blob(namespace=namespace, data=blob_data)
+
         # Submit the blob
         result = await api.blob.submit(blob)
         print(f"Blob submitted at height: {result.height}")
-        print(f"Namespace: {str(namespace)}")
-        
-        # Retrieve the blob to verify submission
-        retrieved_blobs = await api.blob.get_all(result.height, namespace)
-        if retrieved_blobs:
-            print(f"Retrieved blob data: {retrieved_blobs[0].data}")
 
-if __name__ == "__main__":
-    asyncio.run(submit_hello_world())
+        # Get back the blob to verify
+        retrieved_blob = await api.blob.get(result.height, namespace, blob.commitment)
+        if retrieved_blob:
+            print(f"Retrieved blob data: {retrieved_blob.data}")
+        else:
+            print("Failed to retrieve blob")
+
+# Run the async function
+asyncio.run(submit_blob())
 ```
 
-## Running the Hello World Example
-
-The repository includes a complete Hello World example. Run it with:
-
-```bash
-# Export your auth token as an environment variable
-export AUTH_TOKEN="your_auth_token_here"
-
-# Run the example
-python examples/hello_world.py
-```
-
-Or specify arguments directly:
-
-```bash
-python examples/hello_world.py --rpc ws://localhost:26658 --auth your_auth_token_here --message "Custom message"
-```
-
-## Understanding Blob Signers
+## Working with Signers (Share Version 1)
 
 In Celestia v0.11.0+, all blobs support the concept of a "signer" - an identifier for the account that submitted the blob. This is a critical feature for several reasons:
 
-### What are Blob Signers?
+When you submit a blob with a signer, the blob includes information about which account submitted the blob to the Celestia network.
 
-A blob signer is a cryptographic identifier (typically an account address) that's embedded within the blob's metadata. It indicates which account submitted the blob to the Celestia network.
-
-### Why Signers Matter
+Benefits include:
 
 1. **Accountability**: Signers provide a way to verify who submitted specific data to Celestia.
 2. **Permissions**: Future versions of Celestia may enforce namespace permissions where only certain accounts can submit to specific namespaces.
-3. **Application Logic**: dApps can use signer information to implement authentication and authorization rules.
-4. **Auditing**: Signers create an immutable record of who submitted what data, enabling better audit trails.
+3. **Provenance**: Data consumers can verify the origin of data.
 
-### Technical Implementation
-
-When you create a blob with a signer:
-- The blob uses Share Version 1 format (vs Version 0 for unsigned blobs)
-- The signer data is cryptographically embedded in the blob's shares
-- The signer information persists with the blob throughout its lifecycle
-
-### How to Use Signers
+Here's how to submit a blob with a signer:
 
 ```python
-from celestia.types.common_types import Namespace, Blob, Base64
+import asyncio
+import secrets
 
-# Create a blob with signer information
-namespace = Namespace(b'your_namespace')
-data = b"Your data"
-signer = Base64(b"your_account_address")  # Usually a celestia1... address
+from pylestia.types import Namespace, Blob, Base64
+from pylestia import Client
 
-# The signer will be included in the blob (Share Version 1)
-blob = Blob(namespace, data, signer=signer)
+async def submit_signed_blob():
+    client = Client("http://localhost:26658")
 
-# Submit the blob
-result = await api.blob.submit(blob)
+    # Get a valid signer (must be 20 bytes)
+    signer = Base64(b"your_account_address")  # Usually a celestia1... address
+
+    # Connect to the node
+    async with client.connect("your_auth_token_here") as api:
+        # Get the account address that's submitting the transaction
+        account_address = await api.state.account_address()
+
+        # Create a namespace
+        namespace = Namespace(secrets.token_bytes(8))
+
+        # Create a blob with signer
+        blob = Blob(
+            namespace=namespace,
+            data=b"Signed blob example",
+            signer=signer  # This makes it a Share Version 1 blob
+        )
+
+        # The blob's share_version should be 1
+        print(f"Blob share version: {blob.share_version}")
+
+        # Submit the blob
+        result = await api.blob.submit(blob)
+        print(f"Signed blob submitted at height: {result.height}")
+
+        # Retrieve the blob
+        retrieved_blob = await api.blob.get(result.height, namespace, blob.commitment)
+        if retrieved_blob:
+            print(f"Retrieved blob data: {retrieved_blob.data}")
+            print(f"Retrieved blob signer: {retrieved_blob.signer}")
+        else:
+            print("Failed to retrieve blob")
+
+# Run the async function
+asyncio.run(submit_signed_blob())
 ```
 
-### Blob With vs. Without Signer
+## Error Handling
 
-**With Signer (Share Version 1)**:
-- Contains cryptographic proof of submitter identity
-- Supports accountability and permission management
-- Requires the signer parameter when creating the blob
-- Used in applications requiring attribution or governance
-
-**Without Signer (Share Version 0)**:
-- Traditional blob format without submitter information
-- No way to verify who submitted the data
-- Simpler but less feature-rich
-- Used for purely anonymous data submission
+pylestia provides improved error handling in v0.11.0+:
 
 ```python
-# Blob WITHOUT signer (Share Version 0)
-blob_anonymous = Blob(namespace, data)  
-
-# Blob WITH signer (Share Version 1)
-blob_signed = Blob(namespace, data, signer=signer)
-```
-
-## Common Operations
-
-### Retrieving Blobs
-
-```python
-# Get all blobs at a specific height under a namespace
-blobs = await api.blob.get_all(height, namespace)
-
-# Get a specific blob by commitment
-blob = await api.blob.get(height, namespace, commitment)
-```
-
-### Subscribing to Blobs
-
-```python
-# Subscribe to new blobs under a specific namespace
-async for result in api.blob.subscribe(namespace):
-    print(f"New blob at height {result.height}")
-    for blob in result.blobs:
-        print(f"Data: {blob.data}")
-```
-
-### Network and State Operations
-
-```python
-# Get network information
-network_info = await api.p2p.info()
-
-# Get connected peers
-peers = await api.p2p.peers()
-
-# Check header at specific height
-header = await api.header.get_by_height(height)
-```
-
-## Handling Errors
-
-py-celestia provides improved error handling in v0.11.0+:
-
-```python
-from celestia.types.errors import ErrorCode
+from pylestia.types.errors import ErrorCode
 
 try:
-    result = await api.blob.submit(blob)
+    # Try to submit to a reserved namespace
+    reserved_namespace = Namespace(b"\0\0\0\0\0\0\0\0")
+    bad_blob = Blob(namespace=reserved_namespace, data=b"This will fail")
+    result = await api.blob.submit(bad_blob)
 except ValueError as e:
-    # Handle specific error scenarios
-    if "invalid namespace" in str(e).lower():
-        print("The namespace is invalid")
-    elif "blob size" in str(e).lower():
-        print("The blob size is invalid")
-    else:
-        raise
+    # Will catch specific errors like "reserved namespace not allowed"
+    print(f"Error: {e}")
 ```
 
-## Next Steps
+## Further Resources
 
-- Check the [examples directory](../examples/) for more usage examples
-- Explore the [API documentation](./API.md) for detailed information about available methods
-- See the [test directory](../tests/) for implementation examples
+For more examples, check the [examples directory](https://github.com/Bidon15/pylestia/tree/master/examples) in the pylestia repository.
 
 For more information about the Celestia network, visit the [official Celestia documentation](https://docs.celestia.org/).

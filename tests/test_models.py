@@ -7,9 +7,9 @@ core data types without requiring a running Celestia node.
 
 import pytest
 import pytest_asyncio
-from celestia._celestia import types  # noqa
+from pylestia.pylestia_core import types  # noqa
 
-from celestia.types import Namespace
+from pylestia.types import Namespace
 
 
 @pytest.mark.asyncio

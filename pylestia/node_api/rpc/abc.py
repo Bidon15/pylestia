@@ -23,8 +23,8 @@ class RPCExecutor(ABC):
         """
 
     @abstractmethod
-    async def iter(self, method: str, params: tuple[t.Any, ...] = None,
-                   deserializer: t.Callable[[t.Any], t.Any] = None) -> AsyncGenerator[t.Any]:
+    async def subscribe(self, method: str, params: tuple[t.Any, ...] = None,
+                   deserializer: t.Callable[[t.Any], t.Any] = None) -> AsyncGenerator[t.Any, None]:
         """ This method must implement creating an `RPC` subscription and returning
         an asynchronous iterator that returns the incoming subscription results.
         """

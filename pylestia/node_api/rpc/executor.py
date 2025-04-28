@@ -10,7 +10,7 @@ from dataclasses import is_dataclass, asdict
 
 from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 
-from celestia.types import Base64
+from pylestia.types import Base64
 from .abc import RPCExecutor, Transport, logger
 
 class TxConfig(t.TypedDict):
@@ -140,8 +140,8 @@ class RPC(RPCExecutor):
             result = await future
             return deserializer(result)
 
-    async def iter(self, method: str, params: tuple[t.Any, ...] = None,
-                   deserializer: t.Callable[[t.Any], t.Any] = None) -> AsyncGenerator[t.Any]:
+    async def subscribe(self, method: str, params: tuple[t.Any, ...] = None,
+                   deserializer: t.Callable[[t.Any], t.Any] = None) -> AsyncGenerator[t.Any, None]:
         deserializer = deserializer or (lambda a: a)
         subscription_id = await self.call(method, params)
         try:

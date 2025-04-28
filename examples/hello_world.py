@@ -47,15 +47,9 @@ except ImportError:
 # This is only needed if running the example directly from the repo
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# pylestia imports
-try:
-    # Try to import as if installed via pip
-    from pylestia import Client
-    from pylestia.types import Namespace, Blob, Base64
-except ImportError:
-    # Fall back to local import
-    from celestia.node_api import Client
-    from celestia.types import Namespace, Blob, Base64
+# Import the Client and types
+from pylestia import Client
+from pylestia.types import Namespace, Blob, Base64
 
 
 def decode_celestia_address(address):

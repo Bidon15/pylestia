@@ -4,9 +4,9 @@ Test the v0.11.0 features with pure Python (no Rust extension).
 import sys
 import pytest
 
-# Mock the celestia._celestia.types module
-sys.modules['celestia._celestia'] = type('MockCelestiaModule', (), {})
-sys.modules['celestia._celestia.types'] = type('MockCelestiaTypes', (), {
+# Mock the pylestia.pylestia_core.types module
+sys.modules['pylestia.pylestia_core'] = type('MockPylestiaModule', (), {})
+sys.modules['pylestia.pylestia_core.types'] = type('MockPylestiaTypes', (), {
     'normalize_namespace': lambda x: x,
     'normalize_blob': lambda *args: {
         'namespace': args[0],
@@ -18,9 +18,9 @@ sys.modules['celestia._celestia.types'] = type('MockCelestiaTypes', (), {
     }
 })
 
-# Now import the actual code that uses celestia._celestia
-from celestia.types.common_types import Blob, Base64, Namespace
-from celestia.types.errors import ErrorCode
+# Now import the actual code that uses pylestia.pylestia_core
+from pylestia.types import Blob, Base64, Namespace
+from pylestia.types.errors import ErrorCode, parse_error_message
 
 
 def test_blob_with_signer():
@@ -75,8 +75,6 @@ def test_error_codes():
     assert ErrorCode.UnsupportedShareVersion != ErrorCode.ZeroBlobSize
     
     # Test error code matching
-    from celestia.types.errors import parse_error_message
-    
     # Test with valid error message
     result = parse_error_message("error: reserved namespace not allowed")
     assert result is not None

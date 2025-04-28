@@ -11,7 +11,7 @@ import typing as t
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
 
-from celestia._celestia import types as ext  # Rust extension module
+from pylestia.pylestia_core import types as ext  # Rust extension module
 
 
 class Base64(bytes):
@@ -188,5 +188,5 @@ class Blob:
             return Blob(**result)
 
 
-# TxConfig has been moved to celestia.node_api.rpc.executor
+# TxConfig has been moved to pylestia.node_api.rpc.executor
 # as per celestia-types v0.10.0 changes

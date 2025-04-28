@@ -1,7 +1,7 @@
 """
-Pytest configuration and fixtures for pyCelestia tests.
+Pytest configuration and fixtures for pylestia tests.
 
-This module contains the test fixtures needed to run pyCelestia tests,
+This module contains the test fixtures needed to run pylestia tests,
 including Docker container management for the Celestia testnet.
 """
 
@@ -23,7 +23,7 @@ def pytest_configure(config):
     config._inicache["asyncio_default_fixture_loop_scope"] = "function"
     config._inicache["asyncio_default_test_loop_scope"] = "function"
 
-from celestia.node_api import Client
+from pylestia import Client
 from tests.docker import Containers
 from tests.utils import start_testnet, stop_testnet, get_auth_token
 

@@ -1,6 +1,6 @@
-# py-celestia Examples
+# pylestia Examples
 
-This directory contains examples showing how to use py-celestia to interact with the Celestia network.
+This directory contains examples showing how to use pylestia to interact with the Celestia network.
 
 ## Prerequisites
 
@@ -40,6 +40,7 @@ python hello_world.py --rpc ws://localhost:26658 --auth your_auth_token --with-s
 Submits a "Hello, World!" blob to the Celestia network and verifies it was successfully stored.
 
 Features demonstrated:
+
 - Connecting to a Celestia node
 - Creating a random namespace
 - Submitting a blob with or without signer information
@@ -47,6 +48,7 @@ Features demonstrated:
 - Displaying the blob's share version and signer (if applicable)
 
 **Command-line options:**
+
 - `--rpc`: The Celestia node RPC endpoint (default: ws://localhost:26658)
 - `--auth`: Authentication token for the node
 - `--message`: Custom message to submit (default: "Hello, World!")
@@ -55,6 +57,7 @@ Features demonstrated:
 ### Additional Examples
 
 Coming soon:
+
 - Subscribing to blob updates
 - Working with Data Availability Sampling (DAS)
 - Interacting with headers and state

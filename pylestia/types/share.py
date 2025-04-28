@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from celestia.types.blob import RowProof, Proof
-from celestia.types.common_types import Base64, Namespace
+from pylestia.types.blob import RowProof, Proof
+from pylestia.types.common_types import Base64, Namespace
 
 
 @dataclass

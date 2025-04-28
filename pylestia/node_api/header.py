@@ -2,8 +2,8 @@ from collections.abc import AsyncIterator
 from functools import wraps
 from typing import Callable
 
-from celestia.types.header import ExtendedHeader, State
-from celestia.node_api.rpc.abc import Wrapper
+from pylestia.types.header import ExtendedHeader, State
+from pylestia.node_api.rpc.abc import Wrapper
 
 
 def handle_header_error(func):
@@ -30,7 +30,7 @@ class HeaderClient(Wrapper):
 
         Args:
             header_hash (str): The hash of the header to retrieve.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Returns:
             ExtendedHeader | None: The retrieved header if found, otherwise None.
@@ -45,7 +45,7 @@ class HeaderClient(Wrapper):
 
         Args:
             height (int): The height of the header.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Returns:
             ExtendedHeader: The retrieved header.
@@ -81,7 +81,7 @@ class HeaderClient(Wrapper):
         """ Returns the ExtendedHeader of the chain head.
 
         Args:
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Returns:
             ExtendedHeader: The latest known header of the local node.
@@ -95,7 +95,7 @@ class HeaderClient(Wrapper):
         """ Provides the Syncer's view of the current network head.
 
         Args:
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Returns:
             ExtendedHeader: The latest known header of the network.
@@ -109,7 +109,7 @@ class HeaderClient(Wrapper):
         """ Subscribes to recent ExtendedHeaders from the network.
 
         Args:
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Yields:
             ExtendedHeader | None: The latest headers as they become available.
@@ -125,7 +125,7 @@ class HeaderClient(Wrapper):
         """ Returns the current state of the header Syncer.
 
         Args:
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.State.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.State.deserializer`.
 
         Returns:
            State: The current synchronization state.
@@ -149,7 +149,7 @@ class HeaderClient(Wrapper):
 
         Args:
             height (int): The height of the header to wait for.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.header.ExtendedHeader.deserializer`.
+            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~pylestia.types.header.ExtendedHeader.deserializer`.
 
         Returns:
             ExtendedHeader: The retrieved header once available.

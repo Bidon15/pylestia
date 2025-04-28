@@ -1,5 +1,5 @@
 """
-BlobClient for interacting with the Celestia blob API.
+BlobAPI for interacting with the Celestia blob API.
 
 This module provides a client for submitting, retrieving, and subscribing to blobs
 in the Celestia network. It supports both unsigned (Share Version 0) and
@@ -11,13 +11,13 @@ from functools import wraps
 from typing import Callable, List, Optional, Union
 
 # Rust extension types
-from celestia._celestia import types  # noqa
+from pylestia.pylestia_core import types  # noqa
 
 # Local imports
-from celestia.node_api.rpc import TxConfig
-from celestia.node_api.rpc.abc import Wrapper
-from celestia.types import Blob, Commitment, Namespace, Unpack
-from celestia.types.blob import (
+from pylestia.node_api.rpc import TxConfig
+from pylestia.node_api.rpc.abc import Wrapper
+from pylestia.types import Blob, Namespace
+from pylestia.types.blob import (
     CommitmentProof,
     Proof,
     SubmitBlobResult,
@@ -25,7 +25,7 @@ from celestia.types.blob import (
 )
 
 
-from celestia.types.errors import parse_error_message, ErrorCode
+from pylestia.types.errors import parse_error_message, ErrorCode
 
 def handle_blob_error(func):
     """ Decorator to handle blob-related errors."""
@@ -62,19 +62,19 @@ def handle_blob_error(func):
     return wrapper
 
 
-class BlobClient(Wrapper):
+class BlobAPI(Wrapper):
     """ Client for interacting with Celestia's Blob API."""
 
     @handle_blob_error
-    async def get(self, height: int, namespace: Namespace, commitment: Commitment, *,
+    async def get(self, height: int, namespace: Namespace, commitment, *,
                   deserializer: Callable | None = None) -> Blob | None:
         """ Retrieves the blob by commitment under the given namespace and height.
 
         Args:
             height (int): The block height.
             namespace (Namespace): The namespace of the blob.
-            commitment (Commitment): The commitment of the blob.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.common_types.Blob.deserializer`.
+            commitment: The commitment of the blob.
+            deserializer (Callable | None): Custom deserializer. Defaults to Blob.deserializer.
 
         Returns:
             Blob | None: The retrieved blob, or None if not found.
@@ -82,7 +82,7 @@ class BlobClient(Wrapper):
 
         deserializer = deserializer if deserializer is not None else Blob.deserializer
 
-        return await self._rpc.call("blob.Get", (height, Namespace(namespace), Commitment(commitment)), deserializer)
+        return await self._rpc.call("blob.Get", (height, Namespace(namespace), commitment), deserializer)
 
     async def get_all(self, height: int, namespace: Namespace, *namespaces: Namespace,
                       deserializer: Callable | None = None) -> list[Blob] | None:
@@ -116,7 +116,7 @@ class BlobClient(Wrapper):
         return await self._rpc.call("blob.GetAll", (height, namespaces), deserializer)
 
     async def submit(self, blob: Blob, *blobs: Blob, deserializer: Callable | None = None,
-                     **options: Unpack[TxConfig]) -> SubmitBlobResult:
+                     **options) -> SubmitBlobResult:
         """ Sends Blobs and reports the height in which they were included. Allows sending
         multiple Blobs atomically synchronously. Uses default wallet registered on the Node.
 
@@ -124,7 +124,7 @@ class BlobClient(Wrapper):
             blob (Blob): The main blob to submit.
             blobs (Blob): Additional blobs to submit.
             deserializer (Callable | None): Custom deserializer. Defaults to None.
-            options (TxConfig): Additional configuration options.
+            options: Additional configuration options.
 
         Returns:
             SubmitBlobResult: The result of the submission, including the height.
@@ -132,7 +132,7 @@ class BlobClient(Wrapper):
 
         def deserializer_(height):
             if height is not None:
-                return SubmitBlobResult(height, tuple(blob.commitment for blob in blobs))
+                return SubmitBlobResult(height, tuple(b.commitment for b in (blob, *blobs)))
 
         deserializer = deserializer if deserializer is not None else deserializer_
         
@@ -198,89 +198,57 @@ class BlobClient(Wrapper):
         return await self._rpc.call("blob.Submit", (blobs, options), deserializer)
 
     @handle_blob_error
-    async def get_commitment_proof(self, height: int, namespace: Namespace, commitment: Commitment, *,
-                                   deserializer: Callable | None = None) -> CommitmentProof | None:
-        """ Generates a commitment proof for a share commitment.
-
-        Args:
-            height (int): The block height.
-            namespace (Namespace): The namespace of the commitment.
-            commitment (Commitment): The commitment to generate proof for.
-            deserializer (Callable | None): Custom deserializer. Defaults to :meth:`~celestia.types.blob.CommitmentProof.deserializer`.
-
-        Returns:
-            CommitmentProof | None: The commitment proof, or None if not found.
-        """
-
-        deserializer = deserializer if deserializer is not None else CommitmentProof.deserializer
-
-        return await self._rpc.call("blob.GetCommitmentProof", (height, Namespace(namespace), Commitment(commitment)),
-                                    deserializer)
-
-    async def get_proof(self, height: int, namespace: Namespace, commitment: Commitment, *,
-                        deserializer: Callable | None = None) -> list[Proof] | None:
-        """ Retrieves proofs in the given namespaces at the given height by commitment.
-
-        Args:
-            height (int): The block height.
-            namespace (Namespace): The namespace of the proof.
-            commitment (Commitment): The commitment to generate the proof for.
-            deserializer (Callable | None): Custom deserializer. Defaults to None.
-
-        Returns:
-            list[Proof]: A list of proofs or [] if not found.
-        """
-
-        def deserializer_(result) -> list['Proof']:
-            if result is not None:
-                return [Proof(**kwargs) for kwargs in result]
-
-        deserializer = deserializer if deserializer is not None else deserializer_
-        try:
-            return await self._rpc.call("blob.GetProof", (height, Namespace(namespace), Commitment(commitment)),
-                                        deserializer)
-        except ConnectionError as e:
-            if 'blob: not found' in e.args[1].body['message'].lower():
-                return []
-            raise
-
-    async def included(self, height: int, namespace: Namespace, proof: Proof, commitment: Commitment) -> bool:
-        """ Checks whether a blob's given commitment(Merkle subtree root) is
-        included at given height and under the namespace.
+    async def get_proof(self, height: int, namespace: Namespace, commitment, *,
+                   deserializer: Callable | None = None) -> CommitmentProof | None:
+        """ Retrieves the blob by commitment under the given namespace and height. This
+        function will return nothing if blob is not found.
 
         Args:
             height (int): The block height.
             namespace (Namespace): The namespace of the blob.
-            proof (Proof): The proof to check.
-            commitment (Commitment): The commitment to check inclusion for.
+            commitment: The commitment of the blob.
+            deserializer (Callable | None): Custom deserializer. Defaults to None.
 
         Returns:
-            bool: True if included, False otherwise.
+            CommitmentProof | None: The commitment proof, or None if not found.
         """
+        return await self._rpc.call(
+            "blob.GetProof", (height, Namespace(namespace), commitment), deserializer
+        )
 
-        return await self._rpc.call("blob.Included", (height, Namespace(namespace), proof, Commitment(commitment)))
+    async def included(self, height: int, namespace: Namespace, proof: Proof, commitment) -> bool:
+        """ Verifies if a blob with given commitment and namespace is included at the given height.
+
+        Args:
+            height (int): The block height.
+            namespace (Namespace): The namespace of the blob.
+            proof (Proof): The proof of blob inclusion.
+            commitment: The commitment of the blob.
+
+        Returns:
+            bool: True if the blob is included, False otherwise.
+        """
+        return await self._rpc.call(
+            "blob.Included", (height, Namespace(namespace), proof, commitment)
+        )
 
     async def subscribe(self, namespace: Namespace, *,
-                        deserializer: Callable | None = None) -> AsyncIterator[SubscriptionBlobResult | None]:
-        """ Subscribe to published blobs from the given namespace as they are included.
+                    deserializer: Callable | None = None) -> AsyncIterator[SubscriptionBlobResult | None]:
+        """ Subscribes to the blobs under the given namespace.
 
         Args:
             namespace (Namespace): The namespace to subscribe to.
             deserializer (Callable | None): Custom deserializer. Defaults to None.
 
-        Yields:
-            SubscriptionBlobResult: A result with the blob information.
-
+        Returns:
+            AsyncIterator[SubscriptionBlobResult | None]: An async iterator of subscription results.
         """
 
         def deserializer_(result):
-            height = result['Height']
-            blobs = result.get('Blobs')
-            if blobs is not None:
-                return SubscriptionBlobResult(height, tuple(Blob(**kwargs) for kwargs in blobs))
+            if result is not None:
+                return SubscriptionBlobResult(**result)
 
         deserializer = deserializer if deserializer is not None else deserializer_
 
-        async for subs_blob_result in self._rpc.iter("blob.Subscribe", (Namespace(namespace),), deserializer):
-            if subs_blob_result is not None:
-                yield subs_blob_result
+        async for item in self._rpc.subscribe("blob.Subscribe", (Namespace(namespace),), deserializer):
+            yield item

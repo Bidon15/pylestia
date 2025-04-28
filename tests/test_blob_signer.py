@@ -1,8 +1,8 @@
 import pytest
 import sys
 
-from celestia.types.common_types import Blob, Base64, Namespace
-from celestia._celestia import types as ext
+from pylestia.types import Blob, Base64, Namespace
+from pylestia.pylestia_core import types as ext
 
 # This test file is specifically for celestia-types v0.11.0 features
 # It will not be backward compatible with older versions

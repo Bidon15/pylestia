@@ -32,7 +32,7 @@ This library requires celestia-types v0.11.0 and is designed to work with the la
 poetry add pylestia
 
 # Or specify a specific version
-poetry add pylestia==0.2.0
+poetry add pylestia==0.2.1
 ```
 
 ### Alternative: Using pip
@@ -55,7 +55,7 @@ node_url = "https://celestia-rpc.example.com"  # Replace with the actual RPC nod
 auth_token = "your-auth-token"  # Replace with your authentication token (if required)
 
 # Initialize the client
-client = Client(base_url=node_url)
+client = Client(node_url)
 
 # Example usage of the API
 async with client.connect(auth_token) as api:
