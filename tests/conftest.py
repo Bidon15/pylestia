@@ -52,55 +52,64 @@ def containers():
 def ready_nodes():
     yield dict()
 
-@pytest_asyncio.fixture
-def node_provider(containers, ready_nodes):
+@pytest.fixture
+async def node_provider(containers, ready_nodes):
     """
     Async fixture that provides access to Celestia nodes in the testnet.
     
     This fixture returns a function that can be used to get a specific node by name.
     The function will initialize the node if it's not already ready, and will cache
-    the result for future use.
+    the result for later use.
     
     Args:
-        containers: The Docker containers running the testnet
-        ready_nodes: A dictionary of nodes that are already ready
-        
+        containers: Fixture containing Docker containers for Celestia nodes
+        ready_nodes: Dictionary to cache ready nodes
+    
     Returns:
-        A function that takes a node name and returns a tuple of (node, auth_token)
+        Function that takes a node name and returns a connection to that node
     """
-    async def node_provider_(name):
-        # Check if the node is already ready
+    async def node_provider_(name: str) -> Tuple[Any, Dict[str, Any]]:
+        """
+        Get a connection to a specific Celestia node.
+        
+        If the node is not already initialized, this function will start it,
+        wait for it to be ready, and then return a connection.
+        
+        Args:
+            name: Name of the node to connect to
+            
+        Returns:
+            Tuple of (client, info) for the requested node
+        """
         if name in ready_nodes:
             return ready_nodes[name]
+            
+        if name == "bridge":
+            container = containers["bridge"]
+            info = {
+                "base_url": "http://localhost:26659",
+                "auth_token": "/root/.celestia-bridge/keys/auth_token",
+            }
         
-        # Get the node by name
-        elif node := containers.get_by_name_first(name):
-            auth_token = get_auth_token(node)
-            cnt = 10
-            while cnt:
-                cnt -= 1
-                try:
-                    # Try to connect to the node
-                    async with Client(port=node.port['26658/tcp']).connect(auth_token) as api:
-                        balance = await api.state.balance()
-                        if balance.amount:
-                            # Node is ready, cache it
-                            ready_nodes[name] = node, auth_token
-                            return ready_nodes[name]
-                except Exception as exc:
-                    if not cnt:
-                        raise exc
-                
-                # Wait before trying again
-                if cnt:
-                    await asyncio.sleep(10 - cnt)
-            else:
-                raise RuntimeError(f"Node '{name}' not ready")
+        elif name == "full":
+            container = containers["full"]
+            info = {
+                "base_url": "http://localhost:26658",
+                "auth_token": "/root/.celestia-full/keys/auth_token",
+            }
+        
+        elif name == "light":
+            container = containers["light"]
+            info = {
+                "base_url": "http://localhost:26657",
+                "auth_token": "/root/.celestia-light/keys/auth_token",
+            }
+        
         else:
             raise RuntimeError(f"Node '{name}' not found")
 
     # Return a function that takes a node name
-    return lambda name: node_provider_(name)
+    return node_provider_
 
 
 @pytest.fixture(scope='session')
