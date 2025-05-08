@@ -1,11 +1,12 @@
 import asyncio
 from celestia.node_api import Client
 
+
 async def test_graceful_close_subscribing(node_provider):
     result = []
-    bridge, auth_token = await node_provider('bridge-0')
-    client = Client(port=bridge.port['26658/tcp'])
-    height_deserializer=lambda data: int(data['header']['height'])
+    bridge, auth_token = await node_provider("bridge-0")
+    client = Client(port=bridge.port["26658/tcp"])
+    height_deserializer = lambda data: int(data["header"]["height"])
 
     async with client.connect(auth_token) as api:
         start_height = await api.header.local_head(deserializer=height_deserializer)
@@ -14,7 +15,9 @@ async def test_graceful_close_subscribing(node_provider):
         try:
             async with client.connect(auth_token) as api:
                 async with asyncio.timeout(30):
-                    async for height in api.header.subscribe(deserializer=height_deserializer):
+                    async for height in api.header.subscribe(
+                        deserializer=height_deserializer
+                    ):
                         result.append(height)
         except asyncio.CancelledError:
             pass
@@ -31,4 +34,3 @@ async def test_graceful_close_subscribing(node_provider):
 
     assert start_height + 3 == result[-1]
     assert len(result) == 3
-

@@ -27,20 +27,21 @@ from pylestia.types.blob import (
 
 from pylestia.types.errors import parse_error_message, ErrorCode
 
+
 def handle_blob_error(func):
-    """ Decorator to handle blob-related errors."""
+    """Decorator to handle blob-related errors."""
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
         except ConnectionError as e:
-            error_message = e.args[1].body.get('message', '').lower()
-            
+            error_message = e.args[1].body.get("message", "").lower()
+
             # Check for "blob not found" to maintain backward compatibility
-            if 'blob: not found' in error_message:
+            if "blob: not found" in error_message:
                 return None
-                
+
             # Parse for specific error codes
             result = parse_error_message(error_message)
             if result:
@@ -48,14 +49,18 @@ def handle_blob_error(func):
                 if error_code == ErrorCode.NoBlobs:
                     return None
                 # Convert specific error codes to appropriate exceptions
-                if error_code in (ErrorCode.InvalidBlobSigner, ErrorCode.InvalidNamespaceLen, 
-                                  ErrorCode.InvalidDataSize, ErrorCode.InvalidNamespaceType):
+                if error_code in (
+                    ErrorCode.InvalidBlobSigner,
+                    ErrorCode.InvalidNamespaceLen,
+                    ErrorCode.InvalidDataSize,
+                    ErrorCode.InvalidNamespaceType,
+                ):
                     raise ValueError(description)
                 if error_code == ErrorCode.UnsupportedShareVersion:
                     raise ValueError(f"Unsupported share version: {description}")
                 if error_code == ErrorCode.ReservedNamespace:
                     raise ValueError(f"Reserved namespace: {description}")
-            
+
             # If we couldn't handle it specifically, re-raise
             raise
 
@@ -63,12 +68,18 @@ def handle_blob_error(func):
 
 
 class BlobAPI(Wrapper):
-    """ Client for interacting with Celestia's Blob API."""
+    """Client for interacting with Celestia's Blob API."""
 
     @handle_blob_error
-    async def get(self, height: int, namespace: Namespace, commitment, *,
-                  deserializer: Callable | None = None) -> Blob | None:
-        """ Retrieves the blob by commitment under the given namespace and height.
+    async def get(
+        self,
+        height: int,
+        namespace: Namespace,
+        commitment,
+        *,
+        deserializer: Callable | None = None,
+    ) -> Blob | None:
+        """Retrieves the blob by commitment under the given namespace and height.
 
         Args:
             height (int): The block height.
@@ -82,11 +93,18 @@ class BlobAPI(Wrapper):
 
         deserializer = deserializer if deserializer is not None else Blob.deserializer
 
-        return await self._rpc.call("blob.Get", (height, Namespace(namespace), commitment), deserializer)
+        return await self._rpc.call(
+            "blob.Get", (height, Namespace(namespace), commitment), deserializer
+        )
 
-    async def get_all(self, height: int, namespace: Namespace, *namespaces: Namespace,
-                      deserializer: Callable | None = None) -> list[Blob] | None:
-        """ Returns all blobs under the given namespaces at the given height. If all blobs were
+    async def get_all(
+        self,
+        height: int,
+        namespace: Namespace,
+        *namespaces: Namespace,
+        deserializer: Callable | None = None,
+    ) -> list[Blob] | None:
+        """Returns all blobs under the given namespaces at the given height. If all blobs were
         found without any errors, the user will receive a list of blobs. If the BlobService couldn't
         find any blobs under the requested namespaces, the user will receive an empty list of blobs
         along with an empty error. If some of the requested namespaces were not found, the user will receive
@@ -104,20 +122,23 @@ class BlobAPI(Wrapper):
             list[Blob]: The list of blobs or [] if not found.
         """
 
-        def deserializer_(result) -> list['Blob']:
+        def deserializer_(result) -> list["Blob"]:
             if result is not None:
                 return [Blob(**kwargs) for kwargs in result]
             else:
                 return []
 
         deserializer = deserializer if deserializer is not None else deserializer_
-        namespaces = tuple(Namespace(namespace) for namespace in (namespace, *namespaces))
+        namespaces = tuple(
+            Namespace(namespace) for namespace in (namespace, *namespaces)
+        )
 
         return await self._rpc.call("blob.GetAll", (height, namespaces), deserializer)
 
-    async def submit(self, blob: Blob, *blobs: Blob, deserializer: Callable | None = None,
-                     **options) -> SubmitBlobResult:
-        """ Sends Blobs and reports the height in which they were included. Allows sending
+    async def submit(
+        self, blob: Blob, *blobs: Blob, deserializer: Callable | None = None, **options
+    ) -> SubmitBlobResult:
+        """Sends Blobs and reports the height in which they were included. Allows sending
         multiple Blobs atomically synchronously. Uses default wallet registered on the Node.
 
         Args:
@@ -132,10 +153,12 @@ class BlobAPI(Wrapper):
 
         def deserializer_(height):
             if height is not None:
-                return SubmitBlobResult(height, tuple(b.commitment for b in (blob, *blobs)))
+                return SubmitBlobResult(
+                    height, tuple(b.commitment for b in (blob, *blobs))
+                )
 
         deserializer = deserializer if deserializer is not None else deserializer_
-        
+
         # Process blobs using v0.11.0 API
         processed_blobs = []
         for blob_obj in (blob, *blobs):
@@ -144,63 +167,79 @@ class BlobAPI(Wrapper):
                 try:
                     # Try v0.11.0 API with signer parameter
                     try:
-                        processed_blob = types.normalize_blob(blob_obj.namespace, blob_obj.data, blob_obj.signer)
+                        processed_blob = types.normalize_blob(
+                            blob_obj.namespace, blob_obj.data, blob_obj.signer
+                        )
                     except TypeError:
                         # Fall back to basic version if the Rust extension has linking issues
-                        processed_blob = types.normalize_blob(blob_obj.namespace, blob_obj.data)
+                        processed_blob = types.normalize_blob(
+                            blob_obj.namespace, blob_obj.data
+                        )
                         # For v0.11.0 compatibility, set share_version and signer manually
                         if blob_obj.signer is not None:
-                            processed_blob['share_version'] = 1
-                            processed_blob['signer'] = blob_obj.signer
-                    
+                            processed_blob["share_version"] = 1
+                            processed_blob["signer"] = blob_obj.signer
+
                     # Handle commitments that might be returned in different formats
-                    commitment_value = processed_blob['commitment']
-                    if isinstance(commitment_value, str) and commitment_value.startswith('Commitment('):
+                    commitment_value = processed_blob["commitment"]
+                    if isinstance(
+                        commitment_value, str
+                    ) and commitment_value.startswith("Commitment("):
                         # Debug format - extract actual bytes
-                        hex_part = commitment_value.split('(')[1].split(')')[0]
-                        if hex_part.startswith('0x'):
+                        hex_part = commitment_value.split("(")[1].split(")")[0]
+                        if hex_part.startswith("0x"):
                             hex_part = hex_part[2:]
-                        processed_blob['commitment'] = bytes.fromhex(hex_part)
-                    elif isinstance(commitment_value, str) and len(commitment_value) > 0:
+                        processed_blob["commitment"] = bytes.fromhex(hex_part)
+                    elif (
+                        isinstance(commitment_value, str) and len(commitment_value) > 0
+                    ):
                         # Try to handle Base64 formatted commitment
                         try:
                             from base64 import b64decode
-                            processed_blob['commitment'] = b64decode(commitment_value)
+
+                            processed_blob["commitment"] = b64decode(commitment_value)
                         except Exception:
                             # If not valid Base64, leave as is
                             pass
-                    
+
                 except Exception as e:
                     # Create a fallback processed_blob with the same structure
                     import hashlib
+
                     h = hashlib.sha256()
                     h.update(blob_obj.namespace)
                     h.update(blob_obj.data)
                     if blob_obj.signer:
                         h.update(blob_obj.signer)
-                    
+
                     processed_blob = {
-                        'namespace': blob_obj.namespace,
-                        'data': blob_obj.data,
-                        'commitment': h.digest(),
-                        'share_version': 1 if blob_obj.signer else 0,
-                        'index': blob_obj.index
+                        "namespace": blob_obj.namespace,
+                        "data": blob_obj.data,
+                        "commitment": h.digest(),
+                        "share_version": 1 if blob_obj.signer else 0,
+                        "index": blob_obj.index,
                     }
-                    
+
                     if blob_obj.signer:
-                        processed_blob['signer'] = blob_obj.signer
+                        processed_blob["signer"] = blob_obj.signer
                 processed_blobs.append(processed_blob)
             else:
                 # Use the blob as is
                 processed_blobs.append(blob_obj)
-        
+
         blobs = tuple(processed_blobs)
         return await self._rpc.call("blob.Submit", (blobs, options), deserializer)
 
     @handle_blob_error
-    async def get_proof(self, height: int, namespace: Namespace, commitment, *,
-                   deserializer: Callable | None = None) -> CommitmentProof | None:
-        """ Retrieves the blob by commitment under the given namespace and height. This
+    async def get_proof(
+        self,
+        height: int,
+        namespace: Namespace,
+        commitment,
+        *,
+        deserializer: Callable | None = None,
+    ) -> CommitmentProof | None:
+        """Retrieves the blob by commitment under the given namespace and height. This
         function will return nothing if blob is not found.
 
         Args:
@@ -216,8 +255,10 @@ class BlobAPI(Wrapper):
             "blob.GetProof", (height, Namespace(namespace), commitment), deserializer
         )
 
-    async def included(self, height: int, namespace: Namespace, proof: Proof, commitment) -> bool:
-        """ Verifies if a blob with given commitment and namespace is included at the given height.
+    async def included(
+        self, height: int, namespace: Namespace, proof: Proof, commitment
+    ) -> bool:
+        """Verifies if a blob with given commitment and namespace is included at the given height.
 
         Args:
             height (int): The block height.
@@ -232,9 +273,10 @@ class BlobAPI(Wrapper):
             "blob.Included", (height, Namespace(namespace), proof, commitment)
         )
 
-    async def subscribe(self, namespace: Namespace, *,
-                    deserializer: Callable | None = None) -> AsyncIterator[SubscriptionBlobResult | None]:
-        """ Subscribes to the blobs under the given namespace.
+    async def subscribe(
+        self, namespace: Namespace, *, deserializer: Callable | None = None
+    ) -> AsyncIterator[SubscriptionBlobResult | None]:
+        """Subscribes to the blobs under the given namespace.
 
         Args:
             namespace (Namespace): The namespace to subscribe to.
@@ -250,5 +292,7 @@ class BlobAPI(Wrapper):
 
         deserializer = deserializer if deserializer is not None else deserializer_
 
-        async for item in self._rpc.subscribe("blob.Subscribe", (Namespace(namespace),), deserializer):
+        async for item in self._rpc.subscribe(
+            "blob.Subscribe", (Namespace(namespace),), deserializer
+        ):
             yield item

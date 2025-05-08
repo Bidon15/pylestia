@@ -13,8 +13,9 @@ from ajsonrpc.core import JSONRPC20Response, JSONRPC20Request
 from pylestia.types import Base64
 from .abc import RPCExecutor, Transport, logger
 
+
 class TxConfig(t.TypedDict):
-    """ Represents a transaction configuration for submitting transactions to Celestia.
+    """Represents a transaction configuration for submitting transactions to Celestia.
 
     Attributes:
         signer_address (str | None): The address of the transaction signer.
@@ -24,12 +25,14 @@ class TxConfig(t.TypedDict):
         gas (int | None): The amount of gas to use.
         fee_granter_address (str | None): Address of the fee granter (if applicable).
     """
+
     signer_address: str | None
     is_gas_price_set: bool | None
     key_name: str | None
     gas_price: float | None
     gas: int | None
     fee_granter_address: str | None
+
 
 if sys.version_info[:2] <= (3, 10):
     from async_timeout import timeout as asyncio_timeout
@@ -38,30 +41,30 @@ if sys.version_info[:2] <= (3, 10):
 
 RPC_VALUE_ERRORS = [
     # Original errors
-    'unmarshaling params',
-    'equal to 0',
-    'given height is from the future',
-    'invalid range',
-    'height must be bigger than zero',
-    'dial to self attempted',
-    'gater disallows connection to peer',
-    'notfound desc = delegation with delegator',
-    'unknown desc = failed to execute message; message index: 0: invalid shares amount:',
-    'cannot redelegate to the same validator',
-    'too many unbonding delegation entries for (delegator, validator) tuple',
-    'redelegation not found for delegator address',
-    'too many redelegation entries for (delegator, src-validator, dst-validator)',
-    'datastore: key not found',
+    "unmarshaling params",
+    "equal to 0",
+    "given height is from the future",
+    "invalid range",
+    "height must be bigger than zero",
+    "dial to self attempted",
+    "gater disallows connection to peer",
+    "notfound desc = delegation with delegator",
+    "unknown desc = failed to execute message; message index: 0: invalid shares amount:",
+    "cannot redelegate to the same validator",
+    "too many unbonding delegation entries for (delegator, validator) tuple",
+    "redelegation not found for delegator address",
+    "too many redelegation entries for (delegator, src-validator, dst-validator)",
+    "datastore: key not found",
     # New error codes added in v0.10.0 and v0.11.0
-    'reserved namespace',
-    'invalid namespace length',
-    'invalid data size',
-    'blob size mismatch',
-    'unsupported share version',
-    'zero blob size',
-    'no blobs',
-    'invalid blob signer',
-    'invalid namespace type',
+    "reserved namespace",
+    "invalid namespace length",
+    "invalid data size",
+    "blob size mismatch",
+    "unsupported share version",
+    "zero blob size",
+    "no blobs",
+    "invalid blob signer",
+    "invalid namespace type",
 ]
 
 
@@ -75,8 +78,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 class RPC(RPCExecutor):
-    """ RPC encoder / executor / decoder
-    """
+    """RPC encoder / executor / decoder"""
 
     def __init__(self, transport: Transport, timeout: float = 180):
         self.timeout = timeout
@@ -88,8 +90,8 @@ class RPC(RPCExecutor):
 
     def on_transport_response(self, message: str):
         message = json.loads(message)
-        if 'method' in message:
-            subscription_id, item = message['params']
+        if "method" in message:
+            subscription_id, item = message["params"]
             subscription = self._subscriptions.get(subscription_id, None)
             if subscription is not None:
                 subscription.append(item)
@@ -99,13 +101,21 @@ class RPC(RPCExecutor):
             if future := self._pending.get(response.id):
                 if response.error is not None:
                     error_body = getattr(response.error, "body", None)
-                    error_message = error_body.get('message', None).lower() if error_body else None
+                    error_message = (
+                        error_body.get("message", None).lower() if error_body else None
+                    )
                     if any(keyword in error_message for keyword in RPC_VALUE_ERRORS):
                         future.set_exception(ValueError(error_message))
                     elif error_message is None or error_body is None:
-                        future.set_exception(ConnectionError("RPC failed; undefined error"))
+                        future.set_exception(
+                            ConnectionError("RPC failed; undefined error")
+                        )
                     else:
-                        future.set_exception(ConnectionError(f"RPC failed; {error_message}", response.error))
+                        future.set_exception(
+                            ConnectionError(
+                                f"RPC failed; {error_message}", response.error
+                            )
+                        )
                 else:
                     future.set_result(response.result)
             else:
@@ -127,8 +137,12 @@ class RPC(RPCExecutor):
             if exc:
                 subscription.append(exc)
 
-    async def call(self, method: str, params: tuple[t.Any, ...] = None,
-                   deserializer: t.Callable[[t.Any], t.Any] = None) -> t.Any | None:
+    async def call(
+        self,
+        method: str,
+        params: tuple[t.Any, ...] = None,
+        deserializer: t.Callable[[t.Any], t.Any] = None,
+    ) -> t.Any | None:
         params = params or ()
         deserializer = deserializer or (lambda a: a)
         id = str(uuid.uuid4())
@@ -140,8 +154,12 @@ class RPC(RPCExecutor):
             result = await future
             return deserializer(result)
 
-    async def subscribe(self, method: str, params: tuple[t.Any, ...] = None,
-                   deserializer: t.Callable[[t.Any], t.Any] = None) -> AsyncGenerator[t.Any, None]:
+    async def subscribe(
+        self,
+        method: str,
+        params: tuple[t.Any, ...] = None,
+        deserializer: t.Callable[[t.Any], t.Any] = None,
+    ) -> AsyncGenerator[t.Any, None]:
         deserializer = deserializer or (lambda a: a)
         subscription_id = await self.call(method, params)
         try:
